@@ -195,7 +195,7 @@ class MultiLangPoster:
             time.sleep(1)
             
             desc_field = driver.find_element(By.NAME, "description")
-            desc_field.send_keys(description)
+            desc_field.send_keys(description[:500])
             time.sleep(1)
             
             publish_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Опубликовать')]")
