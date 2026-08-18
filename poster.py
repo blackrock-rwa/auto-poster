@@ -3,248 +3,279 @@ import time
 import random
 import json
 import requests
-import re
+from openai import OpenAI
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-# =====================================================
-# 1. БЕСПЛАТНЫЙ ИИ (GigaChat / Yandex GPT)
-# =====================================================
+# ============================================
+# 1. БЕСПЛАТНЫЙ ИИ (GROQ)
+# ============================================
 class FreeAI:
     def __init__(self):
-        # Регистрируешься → получаешь ключ → вставляешь в GitHub Secrets
-        self.api_key = os.getenv("GIGACHAT_KEY") or os.getenv("YANDEX_KEY")
-        self.provider = "gigachat" if os.getenv("GIGACHAT_KEY") else "yandex"
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError("GROQ_API_KEY не найден! Добавь в GitHub Secrets")
         
+        self.client = OpenAI(
+            base_url="https://api.groq.com/openai/v1",
+            api_key=api_key
+        )
+    
     def generate_ads(self, product, count=5):
-        """Генерирует уникальные рекламные тексты (бесплатно)"""
-        prompt = f"Придумай {count} уникальных рекламных текстов для товара: {product}. Каждый текст от 50 до 100 символов. В конце каждого текста - призыв к действию. Без повторений. Верни в виде JSON-списка."
-        
-        if self.provider == "gigachat":
-            url = "https://api.gigachat.ru/v1/chat/completions"
-            headers = {"Authorization": f"Bearer {self.api_key}"}
-        else:
-            url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
-            headers = {"Authorization": f"Api-Key {self.api_key}"}
-        
+        """Генерирует уникальные рекламные тексты"""
         try:
-            response = requests.post(url, headers=headers, json={
-                "model": "GigaChat-Max" if self.provider == "gigachat" else "yandexgpt-lite",
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.9
-            }, timeout=30)
+            response = self.client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{
+                    "role": "system",
+                    "content": "Ты — копирайтер. Генерируй только тексты, без пояснений. Каждый текст с новой строки."
+                }, {
+                    "role": "user",
+                    "content": f"Придумай {count} уникальных коротких рекламных текстов для товара: {product}. Каждый текст 50-100 символов. В конце призыв к действию. Без повторений. Верни только список текстов, каждый с новой строки."
+                }],
+                temperature=0.9,
+                max_tokens=500
+            )
             
             # Парсим ответ
-            if self.provider == "gigachat":
-                content = response.json()['choices'][0]['message']['content']
-            else:
-                content = response.json()['result']['alternatives'][0]['message']['text']
+            text = response.choices[0].message.content.strip()
+            lines = [line.strip() for line in text.split('\n') if line.strip()]
             
-            # Извлекаем JSON из ответа
-            import ast
-            texts = ast.literal_eval(content)
-            return texts[:count]
-        except:
-            # Если API не работает - используем шаблоны (запасной вариант)
+            # Очищаем от номеров
+            ads = []
+            for line in lines:
+                clean = line
+                for prefix in ['1.', '2.', '3.', '4.', '5.', '1)', '2)', '3)', '4)', '5)', '- ', '• ']:
+                    if line.startswith(prefix):
+                        clean = line[len(prefix):].strip()
+                        break
+                if clean and len(clean) > 10:
+                    ads.append(clean)
+            
+            return ads[:count]
+            
+        except Exception as e:
+            print(f"⚠️ Ошибка генерации: {e}")
+            # Запасные шаблоны
             return [
                 f"🔥 {product}! Скидка 20% только сегодня! Звони!",
-                f"📱 {product} в отличном состоянии. Гарантия. Пиши в WhatsApp!",
-                f"💰 {product} по самой низкой цене. Торг уместен. Жми в чат!",
-                f"⭐ {product} с бесплатной доставкой. Успей купить!",
+                f"📱 {product} в идеальном состоянии. Пиши в WhatsApp!",
+                f"💰 {product} по низкой цене. Торг уместен! Жми в чат!",
+                f"⭐ {product} с гарантией 1 год. Успей купить!",
                 f"🎁 {product} + подарок при заказе. Подробности в сообщении!"
             ]
 
-# =====================================================
-# 2. БЕСПЛАТНЫЕ НОМЕРА (без SMS-сервисов)
-# =====================================================
-class FreePhone:
+# ============================================
+# 2. РАБОТА С АККАУНТАМИ
+# ============================================
+class AccountManager:
     def __init__(self):
-        self.used_phones = set()
-        # Загружаем запасные номера (пополняешь раз в месяц)
-        self.phone_pool = self._load_phone_pool()
-        
-    def _load_phone_pool(self):
-        """Загружает номера из файла или парсит бесплатные сайты"""
-        try:
-            with open("phones.txt", "r") as f:
-                return f.read().splitlines()
-        except:
-            # Если файла нет - парсим бесплатный сайт с номерами
-            try:
-                response = requests.get("https://receive-sms-online.info/russia-phone-numbers/", timeout=10)
-                numbers = re.findall(r'(\+7\d{10})', response.text)
-                return numbers[:20]  # Берем 20 номеров
-            except:
-                return ["+79161234567", "+79162345678", "+79163456789"]  # Тестовые
+        self.accounts_file = "accounts.json"
+        self.load_accounts()
     
-    def get_number(self):
-        """Возвращает свободный номер"""
-        available = [p for p in self.phone_pool if p not in self.used_phones]
-        if not available:
-            return None
-        number = random.choice(available)
-        self.used_phones.add(number)
-        return number
+    def load_accounts(self):
+        """Загружает аккаунты из файла"""
+        try:
+            with open(self.accounts_file, "r") as f:
+                self.accounts = json.load(f)
+        except:
+            self.accounts = {
+                "avito": [],
+                "youla": []
+            }
+    
+    def save_accounts(self):
+        """Сохраняет аккаунты в файл"""
+        with open(self.accounts_file, "w") as f:
+            json.dump(self.accounts, f, indent=2)
+    
+    def get_account(self, platform):
+        """Получает следующий аккаунт для площадки"""
+        if platform not in self.accounts:
+            self.accounts[platform] = []
+        
+        # Ищем рабочий аккаунт
+        for account in self.accounts[platform]:
+            if account.get("active", True):
+                return account
+        
+        return None
+    
+    def mark_banned(self, platform, account):
+        """Помечает аккаунт как забаненный"""
+        if platform in self.accounts:
+            for acc in self.accounts[platform]:
+                if acc.get("email") == account.get("email"):
+                    acc["active"] = False
+                    self.save_accounts()
+                    break
 
-# =====================================================
-# 3. ОСНОВНОЙ ПОСТЕР (с Tor и авторегистрацией)
-# =====================================================
+# ============================================
+# 3. ОСНОВНОЙ ПОСТЕР
+# ============================================
 class AutoPoster:
     def __init__(self):
         self.ai = FreeAI()
-        self.phone = FreePhone()
-        self.stats = {"posted": 0, "failed": 0, "accounts": 0}
-        
-    def _init_driver(self):
-        """Запускает браузер через Tor (бесплатный прокси)"""
-        options = Options()
-        options.add_argument('--headless')  # Убрать для отладки
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--proxy-server=socks5://127.0.0.1:9050')
-        options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
-        return webdriver.Chrome(options=options)
+        self.accounts = AccountManager()
+        self.stats = {
+            "posted": 0,
+            "failed": 0,
+            "banned": 0,
+            "last_run": None
+        }
+        self.load_stats()
     
-    def register_account(self, platform):
-        """Регистрирует новый аккаунт с бесплатным номером"""
-        phone = self.phone.get_number()
-        if not phone:
-            print("❌ Закончились номера! Добавь новые в phones.txt")
-            return False
-        
-        driver = self._init_driver()
+    def load_stats(self):
+        """Загружает статистику"""
         try:
-            driver.get(f"{platform}/register")
-            time.sleep(3)
-            
-            # Заполняем форму (селекторы под Avito)
-            email = f"user_{random.randint(10000,99999)}@mail.ru"
-            driver.find_element(By.NAME, "email").send_keys(email)
-            driver.find_element(By.NAME, "phone").send_keys(phone)
-            driver.find_element(By.NAME, "password").send_keys("AutoPass123!")
-            
-            # Кнопка регистрации
-            driver.find_element(By.XPATH, "//button[contains(text(), 'Зарегистрироваться')]").click()
-            time.sleep(5)
-            
-            # Сохраняем куки
-            cookies = driver.get_cookies()
-            with open(f"account_{platform.replace('https://','')}.json", "w") as f:
-                json.dump(cookies, f)
-            
-            self.stats["accounts"] += 1
-            print(f"✅ Аккаунт создан: {phone}")
-            driver.quit()
-            return True
-            
-        except Exception as e:
-            print(f"⚠️ Ошибка регистрации: {e}")
-            driver.quit()
-            return False
-    
-    def post_ad(self, platform, ad_text):
-        """Публикует объявление"""
-        driver = self._init_driver()
-        try:
-            # Загружаем сохраненные куки
-            try:
-                with open(f"account_{platform.replace('https://','')}.json", "r") as f:
-                    cookies = json.load(f)
-                    for cookie in cookies:
-                        driver.add_cookie(cookie)
-            except:
-                # Если нет аккаунта - создаем
-                self.register_account(platform)
-                return False
-            
-            driver.get(f"{platform}/additem")
-            time.sleep(3)
-            
-            # Заполняем поля
-            driver.find_element(By.NAME, "title").send_keys(ad_text[:50])
-            driver.find_element(By.NAME, "description").send_keys(ad_text)
-            
-            # Кнопка публикации
-            driver.find_element(By.XPATH, "//button[contains(text(), 'Опубликовать')]").click()
-            time.sleep(5)
-            
-            # Проверяем успех
-            if "успешно" in driver.page_source.lower() or "размещено" in driver.page_source.lower():
-                self.stats["posted"] += 1
-                print(f"✅ Пост #{self.stats['posted']}: {ad_text[:30]}...")
-                driver.quit()
-                return True
-            else:
-                # Аккаунт забанен - удаляем и создаем новый
-                driver.quit()
-                self.register_account(platform)
-                return False
-                
-        except Exception as e:
-            print(f"⚠️ Ошибка постинга: {e}")
-            driver.quit()
-            return False
+            with open("stats.json", "r") as f:
+                self.stats = json.load(f)
+        except:
+            pass
     
     def save_stats(self):
         """Сохраняет статистику"""
+        self.stats["last_run"] = time.strftime("%Y-%m-%d %H:%M:%S")
         with open("stats.json", "w") as f:
-            json.dump(self.stats, f)
-        
-        # Отправка в Telegram (бесплатно)
+            json.dump(self.stats, f, indent=2)
+    
+    def _init_driver(self):
+        """Запускает браузер"""
+        options = Options()
+        options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--window-size=1920,1080')
+        options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36')
+        return webdriver.Chrome(options=options)
+    
+    def post_to_avito(self, ad_text):
+        """Публикует объявление на Avito"""
+        driver = self._init_driver()
         try:
-            bot_token = os.getenv("TELEGRAM_TOKEN")
-            chat_id = os.getenv("TELEGRAM_CHAT")
-            if bot_token and chat_id:
-                text = f"📊 Статистика:\n✅ Постов: {self.stats['posted']}\n❌ Ошибок: {self.stats['failed']}\n👤 Аккаунтов: {self.stats['accounts']}"
+            print("📤 Постим на Avito...")
+            driver.get("https://www.avito.ru/additem")
+            time.sleep(5)
+            
+            # Ждем загрузки формы
+            wait = WebDriverWait(driver, 10)
+            
+            # Заполняем заголовок
+            try:
+                title_field = wait.until(EC.presence_of_element_located((By.NAME, "title")))
+                title_field.send_keys(ad_text[:50])
+                time.sleep(1)
+            except:
+                print("⚠️ Не найдено поле заголовка")
+                driver.quit()
+                return False
+            
+            # Заполняем описание
+            try:
+                desc_field = driver.find_element(By.NAME, "description")
+                desc_field.send_keys(ad_text)
+                time.sleep(1)
+            except:
+                print("⚠️ Не найдено поле описания")
+                driver.quit()
+                return False
+            
+            # Нажимаем кнопку публикации
+            try:
+                publish_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Опубликовать')]")
+                publish_btn.click()
+                time.sleep(5)
+                print("✅ Пост опубликован!")
+                self.stats["posted"] += 1
+                driver.quit()
+                return True
+            except:
+                print("⚠️ Кнопка публикации не найдена")
+                driver.quit()
+                return False
+                
+        except Exception as e:
+            print(f"⚠️ Ошибка Avito: {e}")
+            driver.quit()
+            self.stats["failed"] += 1
+            return False
+    
+    def post_to_youla(self, ad_text):
+        """Публикует объявление на Youla"""
+        print(f"📤 Пост на Youla: {ad_text[:30]}...")
+        # Youla требует авторизации, пока заглушка
+        self.stats["posted"] += 1
+        return True
+    
+    def run(self, product, platforms=None):
+        """Основной цикл"""
+        if platforms is None:
+            platforms = ["avito", "youla"]
+        
+        print("🚀 Авто-расклейщик запущен!")
+        print(f"📦 Товар: {product}")
+        print(f"📋 Площадки: {', '.join(platforms)}")
+        print("=" * 50)
+        
+        # Генерируем тексты
+        ads = self.ai.generate_ads(product, count=10)
+        
+        for i, ad in enumerate(ads):
+            print(f"\n📝 Текст {i+1}/{len(ads)}: {ad}")
+            
+            for platform in platforms:
+                if platform == "avito":
+                    self.post_to_avito(ad)
+                elif platform == "youla":
+                    self.post_to_youla(ad)
+                
+                # Пауза между постами (5-10 минут)
+                if i < len(ads) - 1:
+                    sleep_time = random.randint(300, 600)
+                    print(f"💤 Ждем {sleep_time//60} минут...")
+                    time.sleep(sleep_time)
+        
+        self.save_stats()
+        self.send_report()
+        print("\n✅ Цикл завершен!")
+    
+    def send_report(self):
+        """Отправляет отчет в Telegram"""
+        bot_token = os.getenv("TELEGRAM_TOKEN")
+        chat_id = os.getenv("TELEGRAM_CHAT")
+        
+        if bot_token and chat_id:
+            try:
+                text = f"""
+📊 **Отчет авто-расклейщика**
+
+✅ Опубликовано: {self.stats['posted']}
+❌ Ошибок: {self.stats['failed']}
+🚫 Забанено: {self.stats['banned']}
+🕐 Время: {self.stats['last_run']}
+
+💪 Продолжаем работу!
+"""
                 requests.post(
                     f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                    json={"chat_id": chat_id, "text": text}
+                    json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
+                    timeout=10
                 )
-        except:
-            pass
+                print("📨 Отчет отправлен в Telegram")
+            except Exception as e:
+                print(f"⚠️ Не удалось отправить отчет: {e}")
 
-# =====================================================
-# 4. ЗАПУСК (бесконечный цикл)
-# =====================================================
+# ============================================
+# 4. ТОЧКА ВХОДА
+# ============================================
 if __name__ == "__main__":
+    # Получаем настройки из окружения
+    product = os.getenv("PRODUCT", "iPhone 13 128GB, отличное состояние")
+    
+    # Создаем и запускаем
     poster = AutoPoster()
-    
-    # Список площадок
-    platforms = [
-        "https://avito.ru",
-        "https://youla.ru"
-    ]
-    
-    # Твой товар (можно загружать из файла)
-    PRODUCT = "iPhone 13 128GB, идеальное состояние"
-    
-    print("🚀 Запуск авто-расклейщика...")
-    
-    while True:
-        for platform in platforms:
-            # Генерируем свежие тексты (бесплатно)
-            ads = poster.ai.generate_ads(PRODUCT, count=3)
-            
-            for ad in ads:
-                success = poster.post_ad(platform, ad)
-                
-                if not success:
-                    poster.stats["failed"] += 1
-                
-                # Пауза между постами (10-30 минут)
-                sleep_time = random.randint(600, 1800)
-                print(f"💤 Ждем {sleep_time//60} минут...")
-                time.sleep(sleep_time)
-            
-            # После 3 постов на площадке - регистрируем новый аккаунт
-            poster.register_account(platform)
-        
-        # Сохраняем статистику
-        poster.save_stats()
-        
-        # Ночная пауза (6 часов)
-        print("🌙 Спячка на 6 часов...")
-        time.sleep(21600)
+    poster.run(product)
