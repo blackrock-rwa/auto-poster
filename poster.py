@@ -2,6 +2,7 @@ import os
 import time
 import random
 import json
+import requests
 from openai import OpenAI
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -27,7 +28,7 @@ TOKEN_DATA = {
 }
 
 # ============================================
-# ГЕНЕРАТОР ПОСТОВ (на 3 языках)
+# ГЕНЕРАТОР ПОСТОВ
 # ============================================
 class PostGenerator:
     def __init__(self):
@@ -42,7 +43,6 @@ class PostGenerator:
     def generate_posts(self):
         """Генерирует посты на русском, английском и китайском"""
         
-        # Шаблоны на русском
         russian_posts = [
             f"""One•Two•Three ($ONE, €TWO, £THREE) — первая прогрессивная финтех-экосистема на Solana.
 
@@ -79,18 +79,16 @@ TG: @onetwothree
 #ONE #TWO #THREE #Solana #DeFi #Investing"""
         ]
         
-        # Переводим на английский через ИИ
         english_posts = []
         chinese_posts = []
         
         for post in russian_posts:
             try:
-                # Перевод на английский
                 eng_response = self.client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{
                         "role": "system",
-                        "content": "You are a professional translator. Translate the following text to English. Keep the same structure, emojis, hashtags and formatting."
+                        "content": "Translate the following text to English. Keep emojis and hashtags."
                     }, {
                         "role": "user",
                         "content": post
@@ -100,12 +98,11 @@ TG: @onetwothree
                 )
                 english_posts.append(eng_response.choices[0].message.content)
                 
-                # Перевод на китайский
                 ch_response = self.client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{
                         "role": "system",
-                        "content": "You are a professional translator. Translate the following text to Chinese (Simplified). Keep the same structure, emojis, hashtags and formatting."
+                        "content": "Translate the following text to Chinese (Simplified). Keep emojis and hashtags."
                     }, {
                         "role": "user",
                         "content": post
@@ -119,7 +116,6 @@ TG: @onetwothree
                 
             except Exception as e:
                 print(f"⚠️ Ошибка перевода: {e}")
-                # Запасные варианты (на английском)
                 english_posts.append(f"""🚀 One•Two•Three — Micro-payment ecosystem on Solana!
 
 · $ONE = $0.01
@@ -135,7 +131,6 @@ TG: @onetwothree
 
 #ONE #TWO #THREE #Solana #Crypto""")
                 
-                # Запасные варианты (на китайском)
                 chinese_posts.append(f"""🚀 One•Two•Three — Solana 上的微支付生态系统！
 
 · $ONE = $0.01
@@ -158,7 +153,7 @@ TG: @onetwothree
         }
 
 # ============================================
-# ПОСТЕР НА ПЛОЩАДКИ
+# ПОСТЕР
 # ============================================
 class MultiLangPoster:
     def __init__(self):
@@ -188,7 +183,6 @@ class MultiLangPoster:
         return webdriver.Chrome(options=options)
     
     def post_to_avito(self, title, description, lang="ru"):
-        """Публикация на Avito"""
         driver = self._init_driver()
         try:
             print(f"📤 Avito ({lang.upper()})...")
@@ -196,18 +190,14 @@ class MultiLangPoster:
             time.sleep(5)
             
             wait = WebDriverWait(driver, 15)
-            
-            # Заполняем заголовок
             title_field = wait.until(EC.presence_of_element_located((By.NAME, "title")))
             title_field.send_keys(title[:50])
             time.sleep(1)
             
-            # Заполняем описание
             desc_field = driver.find_element(By.NAME, "description")
             desc_field.send_keys(description)
             time.sleep(1)
             
-            # Публикуем
             publish_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Опубликовать')]")
             publish_btn.click()
             time.sleep(5)
@@ -225,7 +215,6 @@ class MultiLangPoster:
             return False
     
     def post_to_telegram(self, text, lang="ru"):
-        """Отправка в Telegram"""
         bot_token = os.getenv("TELEGRAM_TOKEN")
         chat_id = os.getenv("TELEGRAM_CHAT")
         
@@ -255,7 +244,6 @@ class MultiLangPoster:
             return False
     
     def send_report(self):
-        """Отчет в Telegram"""
         bot_token = os.getenv("TELEGRAM_TOKEN")
         chat_id = os.getenv("TELEGRAM_CHAT")
         
@@ -284,34 +272,25 @@ class MultiLangPoster:
                 print(f"⚠️ Ошибка отчета: {e}")
     
     def run(self):
-        """Запуск"""
         print("🚀 Мультиязычный расклейщик One•Two•Three запущен!")
         print("🌍 Языки: Русский 🇷🇺, English 🇬🇧, 中文 🇨🇳")
         print("=" * 50)
         
-        # Генерируем посты
         posts = self.generator.generate_posts()
         
-        # Постим каждый пост на всех языках
         for lang, texts in posts.items():
             lang_name = {"ru": "Русский", "en": "English", "zh": "中文"}[lang]
             print(f"\n📝 Язык: {lang_name}")
             
             for i, text in enumerate(texts):
                 print(f"  Пост {i+1}/{len(texts)}")
-                
-                # Заголовок (первые 50 символов)
                 title = text[:50]
                 
-                # Отправляем в Telegram
                 self.post_to_telegram(text, lang)
-                
-                # Публикуем на Avito
                 self.post_to_avito(title, text, lang)
                 
-                # Пауза между постами
                 if i < len(texts) - 1:
-                    wait_time = random.randint(120, 300)  # 2-5 минут
+                    wait_time = random.randint(120, 300)
                     print(f"  💤 Ждем {wait_time} секунд...")
                     time.sleep(wait_time)
         
@@ -319,9 +298,6 @@ class MultiLangPoster:
         self.send_report()
         print("\n✅ Все циклы завершены!")
 
-# ============================================
-# ЗАПУСК
-# ============================================
 if __name__ == "__main__":
     poster = MultiLangPoster()
     poster.run()
