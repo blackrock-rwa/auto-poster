@@ -28,7 +28,7 @@ TOKEN_DATA = {
 }
 
 # ============================================
-# ГЕНЕРАТОР ПОСТОВ
+# ГЕНЕРАТОР ПОСТОВ (только английский и китайский)
 # ============================================
 class PostGenerator:
     def __init__(self):
@@ -40,58 +40,9 @@ class PostGenerator:
             self.client = None
     
     def generate_posts(self):
-        """Генерирует посты на русском, английском и китайском"""
+        """Генерирует посты на английском и китайском"""
         
-        # Базовые посты (русский)
-        russian_posts = [
-            f"""One•Two•Three ($ONE, €TWO, £THREE) — первая прогрессивная финтех-экосистема на Solana.
-
-Три токена. Три валюты. Три ценовых уровня. Один кошелёк.
-
-· $ONE — микро-вход (доступный каждому) — {TOKEN_DATA['prices']['ONE']}
-· €TWO — средний чек (ежедневные траты) — {TOKEN_DATA['prices']['TWO']}
-· £THREE — крупные микро-платежи — {TOKEN_DATA['prices']['THREE']}
-
-🔹 Технологии: Solana (мгновенные транзакции, комиссия < $0.001)
-🔹 Ликвидность: Meteora DAMM V2
-🔹 Безопасность: Аудит, блокировка ликвидности на 365 дней
-
-Сайт: {TOKEN_DATA['links']['website']}
-TG: @onetwothree
-
-#ONE #TWO #THREE #Solana #Crypto #DeFi #MicroPayments""",
-
-            f"""One•Two•Three — инвестиционная логика на Solana!
-
-📊 Эмиссия:
-· $ONE: 9,000,000,000,000,000 ({TOKEN_DATA['prices']['ONE']})
-· €TWO: 999,000,000,000,000 ({TOKEN_DATA['prices']['TWO']})
-· £THREE: 99,000,000,000,000 ({TOKEN_DATA['prices']['THREE']})
-
-💰 Ценовая лестница: 1¢ → 5¢ → 10¢
-
-🔐 Безопасность: Mint Authority отключён, LP заблокирована на 365 дней
-⚡ Solana: 65 000 TPS, комиссия < $0.001
-
-#ONE #TWO #THREE #Solana #DeFi #CryptoInvesting""",
-
-            f"""🚀 Токены One•Two•Three уже на Meteora!
-
-$ONE (${TOKEN_DATA['prices']['ONE']}) — микро-вход
-€TWO ({TOKEN_DATA['prices']['TWO']}) — ежедневные траты  
-£THREE ({TOKEN_DATA['prices']['THREE']}) — крупные платежи
-
-✅ Мгновенные транзакции на Solana
-✅ Комиссия < $0.001
-✅ Ликвидность заблокирована
-
-🔗 Сайт: {TOKEN_DATA['links']['website']}
-📱 TG: @onetwothree
-
-#ONE #TWO #THREE #Solana #Web3 #CryptoNews"""
-        ]
-        
-        # Посты на английском
+        # ===== ПОСТЫ НА АНГЛИЙСКОМ =====
         english_posts = [
             f"""One•Two•Three ($ONE, €TWO, £THREE) — the first progressive fintech ecosystem on Solana.
 
@@ -123,10 +74,24 @@ $ONE ({TOKEN_DATA['prices']['ONE']}) — micro-entry
 🔗 Website: {TOKEN_DATA['links']['website']}
 📱 TG: @onetwothree
 
-#ONE #TWO #THREE #Solana #Web3 #DeFi #Crypto"""
+#ONE #TWO #THREE #Solana #Web3 #DeFi #Crypto""",
+
+            f"""💎 One•Two•Three — the smartest way to pay on Solana!
+
+· $ONE ({TOKEN_DATA['prices']['ONE']}) — for everyday micro-tips
+· €TWO ({TOKEN_DATA['prices']['TWO']}) — for daily purchases
+· £THREE ({TOKEN_DATA['prices']['THREE']}) — for premium services
+
+⚡ 65,000 TPS | Fee < $0.001
+🔒 Audited | LP locked 365 days
+
+Start using today: {TOKEN_DATA['links']['website']}
+Join community: @onetwothree
+
+#ONE #TWO #THREE #Solana #Payments #Crypto #Web3"""
         ]
         
-        # Посты на китайском
+        # ===== ПОСТЫ НА КИТАЙСКОМ =====
         chinese_posts = [
             f"""One•Two•Three ($ONE, €TWO, £THREE) — Solana 上首个渐进式金融科技生态系统。
 
@@ -158,35 +123,67 @@ $ONE ({TOKEN_DATA['prices']['ONE']}) — 微支付入口
 🔗 网站: {TOKEN_DATA['links']['website']}
 📱 TG: @onetwothree
 
-#ONE #TWO #THREE #Solana #Web3 #DeFi #加密货币"""
+#ONE #TWO #THREE #Solana #Web3 #DeFi #加密货币""",
+
+            f"""💎 One•Two•Three — Solana 上最智能的支付方式！
+
+· $ONE ({TOKEN_DATA['prices']['ONE']}) — 日常微支付
+· €TWO ({TOKEN_DATA['prices']['TWO']}) — 日常消费
+· £THREE ({TOKEN_DATA['prices']['THREE']}) — 高级服务支付
+
+⚡ 65,000 TPS | 手续费 < $0.001
+🔒 已审计 | LP锁定365天
+
+立即使用: {TOKEN_DATA['links']['website']}
+加入社区: @onetwothree
+
+#ONE #TWO #THREE #Solana #支付 #加密货币 #Web3"""
         ]
         
-        # Если есть AI — делаем уникальные посты
+        # Если есть AI — добавляем уникальные посты
         if self.use_ai and self.client:
             try:
-                # Генерируем уникальные посты на английском
+                # Генерируем дополнительные посты на английском
                 response = self.client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{
                         "role": "system",
-                        "content": "You are a crypto marketer. Generate 3 unique promotional posts for One•Two•Three tokens on Solana. Each post 100-200 words. Include prices, features, and call to action."
+                        "content": "You are a crypto marketer. Generate 2 unique promotional posts for One•Two•Three tokens on Solana. Each post 100-200 words. Include prices, features, and call to action. Use emojis and hashtags."
                     }, {
                         "role": "user",
                         "content": f"Token: One•Two•Three ($ONE, €TWO, £THREE). Prices: $ONE={TOKEN_DATA['prices']['ONE']}, €TWO={TOKEN_DATA['prices']['TWO']}, £THREE={TOKEN_DATA['prices']['THREE']}. Website: {TOKEN_DATA['links']['website']}"
                     }],
                     temperature=0.9,
-                    max_tokens=600
+                    max_tokens=500
                 )
                 ai_eng = response.choices[0].message.content.split('\n\n')
                 english_posts.extend(ai_eng[:2])
-                print("✅ AI сгенерировал дополнительные посты на английском")
+                print("✅ AI добавил посты на английском")
+                
+                # Генерируем дополнительные посты на китайском
+                response = self.client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{
+                        "role": "system",
+                        "content": "You are a crypto marketer. Generate 2 unique promotional posts for One•Two•Three tokens on Solana in Chinese (Simplified). Each post 100-200 words. Use emojis and hashtags."
+                    }, {
+                        "role": "user",
+                        "content": f"Token: One•Two•Three ($ONE, €TWO, £THREE). Prices: $ONE={TOKEN_DATA['prices']['ONE']}, €TWO={TOKEN_DATA['prices']['TWO']}, £THREE={TOKEN_DATA['prices']['THREE']}. Website: {TOKEN_DATA['links']['website']}"
+                    }],
+                    temperature=0.9,
+                    max_tokens=500
+                )
+                ai_zh = response.choices[0].message.content.split('\n\n')
+                chinese_posts.extend(ai_zh[:2])
+                print("✅ AI добавил посты на китайском")
+                
             except Exception as e:
                 print(f"⚠️ Ошибка AI: {e}")
         
-        return {"ru": russian_posts, "en": english_posts, "zh": chinese_posts}
+        return {"en": english_posts, "zh": chinese_posts}
 
 # ============================================
-# ПОСТЕР НА ПЛОЩАДКИ (Telegram, Twitter, Discord)
+# ПОСТЕР (Telegram + Twitter + Discord)
 # ============================================
 class InternationalPoster:
     def __init__(self):
@@ -228,7 +225,7 @@ class InternationalPoster:
             return False
     
     def post_to_twitter(self, text):
-        """Отправка в Twitter/X через API"""
+        """Отправка в Twitter/X"""
         try:
             import tweepy
             
@@ -238,10 +235,9 @@ class InternationalPoster:
             access_secret = os.getenv("TWITTER_ACCESS_SECRET")
             
             if not all([api_key, api_secret, access_token, access_secret]):
-                print("⚠️ Twitter не настроен (нет ключей)")
+                print("⚠️ Twitter не настроен")
                 return False
             
-            # Twitter API v2
             client = tweepy.Client(
                 consumer_key=api_key,
                 consumer_secret=api_secret,
@@ -249,7 +245,6 @@ class InternationalPoster:
                 access_token_secret=access_secret
             )
             
-            # Обрезаем до 280 символов
             tweet_text = text[:277] + "..." if len(text) > 280 else text
             client.create_tweet(text=tweet_text)
             print("✅ Twitter — опубликовано!")
@@ -262,13 +257,12 @@ class InternationalPoster:
             return False
     
     def post_to_discord(self, text):
-        """Отправка в Discord через Webhook"""
+        """Отправка в Discord"""
         webhook_url = os.getenv("DISCORD_WEBHOOK")
         if not webhook_url:
             return False
         
         try:
-            # Discord лимит 2000 символов
             discord_text = text[:1900] + "..." if len(text) > 2000 else text
             response = requests.post(webhook_url, json={"content": discord_text}, timeout=30)
             if response.status_code == 204:
@@ -310,29 +304,37 @@ class InternationalPoster:
     def run(self):
         print("🚀 Международный расклейщик One•Two•Three запущен!")
         print("🌍 Площадки: Telegram, Twitter, Discord")
-        print("🌐 Языки: Русский, English, 中文")
+        print("🌐 Языки: English 🇬🇧 + 中文 🇨🇳 (русский УДАЛЁН)")
+        print("⏰ Пауза между постами: 2-4 часа")
         print("=" * 60)
         
         generator = PostGenerator()
         posts = generator.generate_posts()
         
+        # Перемешиваем посты, чтобы языки чередовались
+        all_posts = []
         for lang, texts in posts.items():
-            lang_name = {"ru": "Русский", "en": "English", "zh": "中文"}[lang]
-            print(f"\n📝 Язык: {lang_name} — {len(texts)} постов")
+            for text in texts:
+                all_posts.append({"lang": lang, "text": text})
+        random.shuffle(all_posts)
+        
+        for i, post_data in enumerate(all_posts):
+            lang_name = {"en": "English 🇬🇧", "zh": "中文 🇨🇳"}[post_data["lang"]]
+            print(f"\n📝 Пост {i+1}/{len(all_posts)} ({lang_name})")
+            print(f"  📌 {post_data['text'][:80]}...")
             
-            for i, text in enumerate(texts):
-                print(f"\n  Пост {i+1}/{len(texts)}")
-                print(f"  📌 {text[:80]}...")
-                
-                # Отправляем на все площадки
-                self.post_to_telegram(text)
-                self.post_to_twitter(text)
-                self.post_to_discord(text)
-                
-                if i < len(texts) - 1:
-                    wait_time = random.randint(60, 180)
-                    print(f"  💤 Ждем {wait_time} секунд...")
-                    time.sleep(wait_time)
+            # Отправляем на все площадки
+            self.post_to_telegram(post_data["text"])
+            self.post_to_twitter(post_data["text"])
+            self.post_to_discord(post_data["text"])
+            
+            # ⏰ БОЛЬШАЯ ПАУЗА: 2-4 ЧАСА (7200-14400 секунд)
+            if i < len(all_posts) - 1:
+                wait_time = random.randint(7200, 14400)  # 2-4 часа
+                wait_hours = wait_time // 3600
+                wait_minutes = (wait_time % 3600) // 60
+                print(f"  💤 Ждем {wait_hours} часов {wait_minutes} минут...")
+                time.sleep(wait_time)
         
         self.save_stats()
         self.send_report()
