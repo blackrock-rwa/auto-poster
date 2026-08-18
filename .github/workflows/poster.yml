@@ -1,8 +1,6 @@
 name: One•Two•Three Расклейка
 
 on:
-  schedule:
-    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,13 +9,15 @@ jobs:
     timeout-minutes: 30
     
     steps:
+      # Используем проверенную версию checkout v3 (она еще работает)
       - name: Клонирование репозитория
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
       
+      # Используем проверенную версию setup-python v4 (она еще работает)
       - name: Установка Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.10'
       
       - name: Установка зависимостей
         run: |
@@ -34,12 +34,12 @@ jobs:
         run: |
           python poster.py
       
+      # Используем проверенную версию upload-artifact v3 (она тоже еще работает)
       - name: Сохранение статистики
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: poster-data
           path: |
             stats.json
             history.json
-          if-no-files-found: ignore
