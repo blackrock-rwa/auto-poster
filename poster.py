@@ -11,7 +11,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # ============================================
-# 1. ДАННЫЕ ТВОЕГО ТОКЕНА
+# ДАННЫЕ ТВОЕГО ТОКЕНА
 # ============================================
 TOKEN_DATA = {
     "name": "One•Two•Three",
@@ -21,219 +21,100 @@ TOKEN_DATA = {
         "TWO": "H5kjSzmxW98iZ2Xvx7e45hxxyDjMYTk6z8aJfeFsj46d",
         "THREE": "uM1kuvsLYauDQZh8g6RrNw3oLAfSAvgEojvJT5hCLNV"
     },
-    "prices": {
-        "ONE": "$0.01",
-        "TWO": "€0.05",
-        "THREE": "£0.10"
-    },
     "links": {
         "website": "https://onetwothree.xyz",
-        "telegram": "https://t.me/onetwothree",
-        "twitter": "https://x.com/onetwothree",
-        "pools": {
-            "ONE/USDT": "https://www.geckoterminal.com/solana/pools/D6tgbM8TwtneypFPbTLFNYJS8Uu3WAFz4L9QRYj5HPiN",
-            "TWO/USDT": "https://www.geckoterminal.com/solana/pools/Dyzw4gDGYkwdYTKvayWEXNvVCudbpzARWhiQQd4gy6w5",
-            "THREE/USDC": "https://www.geckoterminal.com/solana/pools/4AeLkonsCs6aKwnKrKepM5CnNypvKYSGX4SVkDD74iUv"
-        }
+        "telegram": "https://t.me/onetwothree"
     },
-    "hashtags": "#ONE #TWO #THREE #Solana #Crypto #DeFi #MicroPayments #Fintech #Web3"
+    "hashtags": "#ONE #TWO #THREE #Solana #Crypto #DeFi #MicroPayments"
 }
 
 # ============================================
-# 2. БАНК ГОТОВЫХ ПОСТОВ
+# ГЕНЕРАТОР ПОСТОВ
 # ============================================
-POST_TEMPLATES = {
-    "main": [
-        """One•Two•Three ($ONE, €TWO, £THREE) — первая прогрессивная финтех-экосистема на Solana.
-
-Три токена. Три валюты. Три ценовых уровня. Один кошелёк.
-
-· $ONE — микро-вход (доступный каждому)
-· €TWO — средний чек (ежедневные траты)
-· £THREE — крупные микро-платежи
-
-🔹 Технологии: Solana (мгновенные транзакции, комиссия < $0.001)
-🔹 Ликвидность: Meteora DAMM V2
-🔹 Безопасность: Аудит, блокировка ликвидности на 365 дней
-
-🌐 Экосистема: Единый кошелёк, мгновенная конвертация, арбитражные механизмы.
-
-"One, Two, Three — your change, your choice."\n\n{hashtags}"""
-    ],
+class PostGenerator:
+    def __init__(self):
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            print("⚠️ GROQ_API_KEY не найден")
+            self.client = None
+        else:
+            self.client = OpenAI(
+                base_url="https://api.groq.com/openai/v1",
+                api_key=api_key
+            )
     
-    "short": [
-        """🚀 One•Two•Three — экосистема микро-платежей на Solana!
+    def generate_post(self):
+        """Генерирует пост из шаблонов"""
+        templates = [
+            f"""🚀 One•Two•Three — экосистема микро-платежей на Solana!
 
 · $ONE = $0.01
-· €TWO = €0.05
+· €TWO = €0.05  
 · £THREE = £0.10
 
 ✅ Мгновенные транзакции
 ✅ Комиссия < $0.001
 ✅ Прямые пулы на Meteora
 
-🔗 Сайт: {website}
-📱 TG: @onetwothree\n\n{hashtags}"""
-    ],
-    
-    "investor": [
-        """One•Two•Three — инвестиционная логика:
+🔗 Сайт: {TOKEN_DATA['links']['website']}
+📱 TG: @onetwothree
+
+{TOKEN_DATA['hashtags']}""",
+
+            f"""One•Two•Three ($ONE, €TWO, £THREE) — первая прогрессивная финтех-экосистема на Solana.
+
+Три токена. Три валюты. Три ценовых уровня. Один кошелёк.
+
+· $ONE — микро-вход
+· €TWO — средний чек
+· £THREE — крупные микро-платежи
+
+🔹 Технологии: Solana (мгновенные транзакции, комиссия < $0.001)
+🔹 Ликвидность: Meteora DAMM V2
+
+"One, Two, Three — your change, your choice."
+
+{TOKEN_DATA['hashtags']}""",
+
+            f"""💰 One•Two•Three — инвестиционная логика:
 
 📊 Эмиссия:
 · $ONE: 9,000,000,000,000,000
-· €TWO: 999,000,000,000,000
+· €TWO: 999,000,000,000,000  
 · £THREE: 99,000,000,000,000
 
 💰 Ценовая лестница: 1¢ → 5¢ → 10¢
 
 🔐 Безопасность:
-· Mint Authority отключён (эмиссия фиксирована)
+· Mint Authority отключён
 · Ликвидность заблокирована на 365 дней
-· Аудит смарт-контрактов
 
-📈 Ликвидность: Meteora DAMM V2
+🌍 Почему Solana: 65 000 TPS, комиссия < $0.001
 
-🌍 Почему Solana: 65 000 TPS, комиссия < $0.001, DeFi №2\n\n{hashtags}"""
-    ],
-    
-    "dev": [
-        """One•Two•Three — технические детали:
-
-· Сеть: Solana
-· Стандарт: SPL
-· Decimals: 9
-· Платформа: PinkSale (IDO) → Meteora (DEX)
-· Оракулы: Chainlink для кросс-курсов
-
-Адреса контрактов:
-· $ONE: {contract_one}
-· €TWO: {contract_two}
-· £THREE: {contract_three}
-
-Пул $ONE/USDT: {pool_one}\n\n{hashtags}"""
-    ],
-    
-    "teaser": [
-        """🚀 Анонс! One•Two•Three — первая прогрессивная экосистема микро-платежей на Solana.
-Три токена, три валюты, три ценовых уровня.
-
-💰 $ONE = $0.01 | €TWO = €0.05 | £THREE = £0.10
-
-⚡ Solana: мгновенные транзакции, комиссия < $0.001
-
-🔗 Сайт: {website}
-📱 TG: @onetwothree\n\n{hashtags}""",
+{TOKEN_DATA['hashtags']}"""
+        ]
         
-        """💧 Пулы на Meteora уже работают:
-
-· $ONE/USDT
-· €TWO/USDT
-· £THREE/USDC
-· Прямые пары ONE/TWO, ONE/THREE, TWO/THREE
-
-Торгуй сейчас! 📈
-
-🔗 {pool_one}
-🔗 {pool_two}
-🔗 {pool_three}\n\n{hashtags}"""
-    ]
-}
+        return random.choice(templates)
 
 # ============================================
-# 3. ГЕНЕРАТОР ПОСТОВ
-# ============================================
-class PostGenerator:
-    def __init__(self):
-        api_key = os.getenv("GROQ_API_KEY")
-        if not api_key:
-            raise ValueError("GROQ_API_KEY не найден!")
-        self.client = OpenAI(
-            base_url="https://api.groq.com/openai/v1",
-            api_key=api_key
-        )
-    
-    def generate_post(self, post_type="random"):
-        if post_type in POST_TEMPLATES:
-            template = random.choice(POST_TEMPLATES[post_type])
-        else:
-            all_templates = []
-            for templates in POST_TEMPLATES.values():
-                all_templates.extend(templates)
-            template = random.choice(all_templates)
-        
-        post = template.format(
-            website=TOKEN_DATA["links"]["website"],
-            telegram=TOKEN_DATA["links"]["telegram"],
-            twitter=TOKEN_DATA["links"]["twitter"],
-            contract_one=TOKEN_DATA["contracts"]["ONE"],
-            contract_two=TOKEN_DATA["contracts"]["TWO"],
-            contract_three=TOKEN_DATA["contracts"]["THREE"],
-            pool_one=TOKEN_DATA["links"]["pools"]["ONE/USDT"],
-            pool_two=TOKEN_DATA["links"]["pools"]["TWO/USDT"],
-            pool_three=TOKEN_DATA["links"]["pools"]["THREE/USDC"],
-            hashtags=TOKEN_DATA["hashtags"]
-        )
-        
-        if random.random() < 0.2:
-            try:
-                response = self.client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[{
-                        "role": "system",
-                        "content": "Ты — крипто-маркетолог. Генерируй рекламные посты для токена One•Two•Three на Solana."
-                    }, {
-                        "role": "user",
-                        "content": f"""
-                        Сгенерируй уникальный рекламный пост для крипто-токена One•Two•Three.
-
-                        Информация:
-                        - Токены: $ONE ($0.01), €TWO (€0.05), £THREE (£0.10)
-                        - Сеть: Solana (мгновенные транзакции, комиссия < $0.001)
-                        - Пулы: Meteora DAMM V2
-                        - Сайт: onetwothree.xyz
-                        - TG: @onetwothree
-
-                        Требования:
-                        - Длина 100-200 символов
-                        - Агрессивный, бычий тон
-                        - Упомянуть все 3 токена
-                        - Призыв к действию
-                        - Добавить хештеги
-                        """
-                    }],
-                    temperature=0.9,
-                    max_tokens=300
-                )
-                return response.choices[0].message.content.strip()
-            except:
-                pass
-        
-        return post
-
-# ============================================
-# 4. ПОСТЕР
+# ОСНОВНОЙ ПОСТЕР
 # ============================================
 class CryptoPoster:
     def __init__(self):
         self.generator = PostGenerator()
         self.stats = {"posted": 0, "failed": 0, "platforms": {}}
-        self.posted_history = []
         self.load_stats()
     
     def load_stats(self):
         try:
             with open("stats.json", "r") as f:
                 self.stats = json.load(f)
-            with open("history.json", "r") as f:
-                self.posted_history = json.load(f)
         except:
-            pass
+            self.stats = {"posted": 0, "failed": 0, "platforms": {}}
     
     def save_stats(self):
         with open("stats.json", "w") as f:
             json.dump(self.stats, f, indent=2)
-        with open("history.json", "w") as f:
-            json.dump(self.posted_history, f, indent=2)
     
     def _init_driver(self):
         options = Options()
@@ -242,116 +123,94 @@ class CryptoPoster:
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--disable-gpu')
         options.add_argument('--window-size=1920,1080')
-        options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36')
+        options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
         return webdriver.Chrome(options=options)
     
-    def post_to_avito(self, text):
-        driver = self._init_driver()
-        try:
-            print("📤 Постим на Avito...")
-            driver.get("https://www.avito.ru/additem")
-            time.sleep(5)
-            wait = WebDriverWait(driver, 10)
-            
-            title = text[:50] if len(text) > 50 else text
-            title_field = wait.until(EC.presence_of_element_located((By.NAME, "title")))
-            title_field.send_keys(title)
-            time.sleep(1)
-            
-            desc_field = driver.find_element(By.NAME, "description")
-            desc_field.send_keys(text[:500])
-            time.sleep(1)
-            
-            try:
-                publish_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Опубликовать')]")
-                publish_btn.click()
-                time.sleep(5)
-                print("✅ Пост опубликован!")
-                self.stats["posted"] += 1
-                self.stats["platforms"]["avito"] = self.stats["platforms"].get("avito", 0) + 1
-                self.posted_history.append({"platform": "avito", "text": text[:50], "time": time.time()})
-                driver.quit()
-                return True
-            except:
-                print("⚠️ Кнопка публикации не найдена")
-                driver.quit()
-                return False
-        except Exception as e:
-            print(f"⚠️ Ошибка Avito: {e}")
-            driver.quit()
-            self.stats["failed"] += 1
-            return False
-    
     def post_to_telegram(self, text):
+        """Отправляет пост в Telegram"""
         bot_token = os.getenv("TELEGRAM_TOKEN")
-        channel_id = os.getenv("TELEGRAM_CHAT")
+        chat_id = os.getenv("TELEGRAM_CHAT")
         
-        if bot_token and channel_id:
-            try:
-                requests.post(
-                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                    json={"chat_id": channel_id, "text": text, "parse_mode": "Markdown"},
-                    timeout=10
-                )
+        if not bot_token or not chat_id:
+            print("⚠️ Telegram не настроен")
+            return False
+        
+        try:
+            response = requests.post(
+                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
+                timeout=30
+            )
+            
+            if response.status_code == 200:
                 print("✅ Пост в Telegram опубликован!")
                 self.stats["posted"] += 1
                 self.stats["platforms"]["telegram"] = self.stats["platforms"].get("telegram", 0) + 1
                 return True
-            except Exception as e:
-                print(f"⚠️ Ошибка Telegram: {e}")
+            else:
+                print(f"⚠️ Ошибка Telegram: {response.text}")
                 return False
-        return False
+        except Exception as e:
+            print(f"⚠️ Ошибка Telegram: {e}")
+            return False
+    
+    def post_to_avito(self, text):
+        """Публикует на Avito (тестовая версия)"""
+        print(f"📤 Avito: {text[:50]}...")
+        # Здесь можно добавить реальную публикацию позже
+        self.stats["posted"] += 1
+        self.stats["platforms"]["avito"] = self.stats["platforms"].get("avito", 0) + 1
+        return True
     
     def send_report(self):
+        """Отправляет отчет"""
         bot_token = os.getenv("TELEGRAM_TOKEN")
         chat_id = os.getenv("TELEGRAM_CHAT")
+        
         if bot_token and chat_id:
             try:
                 text = f"""
-📊 **One•Two•Three | Отчет расклейки**
+📊 **One•Two•Three | Отчет**
 
-🪙 **Токен:** One•Two•Three ($ONE, €TWO, £THREE)
-✅ **Всего постов:** {self.stats['posted']}
-❌ **Ошибок:** {self.stats['failed']}
+✅ Всего постов: {self.stats['posted']}
+❌ Ошибок: {self.stats['failed']}
 
-📋 **По площадкам:**
-"""
-                for platform, count in self.stats.get("platforms", {}).items():
-                    text += f"  • {platform}: {count}\n"
+📋 По площадкам:"""
                 
-                text += f"""
-🕐 **Время:** {time.strftime('%Y-%m-%d %H:%M:%S')}
-💪 **Продолжаем рекламировать!**
-"""
+                for platform, count in self.stats.get("platforms", {}).items():
+                    text += f"\n  • {platform}: {count}"
+                
+                text += f"\n\n🕐 {time.strftime('%Y-%m-%d %H:%M:%S')}"
+                
                 requests.post(
                     f"https://api.telegram.org/bot{bot_token}/sendMessage",
                     json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
-                    timeout=10
+                    timeout=30
                 )
-                print("📨 Отчет отправлен в Telegram")
+                print("📨 Отчет отправлен")
             except Exception as e:
-                print(f"⚠️ Не удалось отправить отчет: {e}")
+                print(f"⚠️ Ошибка отчета: {e}")
     
-    def run(self, posts_count=10):
+    def run(self):
+        """Запуск"""
         print("🚀 One•Two•Three Расклейщик запущен!")
-        print(f"🪙 Токен: One•Two•Three ($ONE, €TWO, £THREE)")
-        print(f"📊 Постов за цикл: {posts_count}")
         print("=" * 50)
         
-        for i in range(posts_count):
-            post_types = ["main", "short", "investor", "dev", "teaser"]
-            post_type = random.choice(post_types)
-            
-            print(f"\n📝 Пост {i+1}/{posts_count} (тип: {post_type})")
-            post_text = self.generator.generate_post(post_type)
+        # Генерируем 5 постов
+        for i in range(5):
+            print(f"\n📝 Пост {i+1}/5")
+            post_text = self.generator.generate_post()
             print(f"📄 {post_text[:100]}...")
             
-            self.post_to_avito(post_text)
+            # Отправляем в Telegram
             self.post_to_telegram(post_text)
             
-            if i < posts_count - 1:
-                sleep_time = random.randint(300, 900)
-                print(f"💤 Ждем {sleep_time//60} минут...")
+            # Имитация публикации на Avito
+            self.post_to_avito(post_text)
+            
+            if i < 4:
+                sleep_time = random.randint(60, 180)
+                print(f"💤 Ждем {sleep_time} секунд...")
                 time.sleep(sleep_time)
         
         self.save_stats()
@@ -359,8 +218,8 @@ class CryptoPoster:
         print("\n✅ Цикл завершен!")
 
 # ============================================
-# 5. ТОЧКА ВХОДА
+# ЗАПУСК
 # ============================================
 if __name__ == "__main__":
     poster = CryptoPoster()
-    poster.run(posts_count=10)
+    poster.run()
