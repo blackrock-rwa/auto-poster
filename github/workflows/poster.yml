@@ -2,26 +2,44 @@ name: Авто-расклейка
 
 on:
   schedule:
-    - cron: '0 */6 * * *'   # 4 раза в день
-  workflow_dispatch:
+    - cron: '0 */6 * * *'   # Каждые 6 часов
+  workflow_dispatch:        # Ручной запуск
 
 jobs:
   post:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
     steps:
-      - uses: actions/checkout@v3
+      - name: Клонирование репозитория
+        uses: actions/checkout@v3
       
-      - name: Установка зависимостей
+      - name: Установка Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Установка Chrome и зависимостей
         run: |
-          pip install selenium requests webdriver-manager
           sudo apt-get update
-          sudo apt-get install -y tor chromium-browser tesseract-ocr
-          sudo service tor start
-          
-      - name: Запуск
+          sudo apt-get install -y chromium-browser chromium-chromedriver
+          pip install selenium requests openai webdriver-manager
+      
+      - name: Запуск расклейки
         env:
-          GIGACHAT_KEY: ${{ secrets.GIGACHAT_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT: ${{ secrets.TELEGRAM_CHAT }}
+          PRODUCT: ${{ secrets.PRODUCT }}
         run: |
           python poster.py
+      
+      - name: Сохранение статистики и логов
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: poster-data
+          path: |
+            stats.json
+            accounts.json
+            *.log
