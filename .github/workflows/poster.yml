@@ -1,33 +1,33 @@
-name: One•Two•Three Расклейка
+import os
+import requests
+import time
 
-on:
-  workflow_dispatch:
+print("🚀 Бот запущен!")
 
-jobs:
-  post:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    
-    steps:
-      - name: Клонирование репозитория
-        uses: actions/checkout@v4
-      
-      - name: Установка Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      
-      - name: Установка зависимостей
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser chromium-chromedriver
-          pip install --upgrade pip
-          pip install selenium requests openai webdriver-manager
-      
-      - name: Запуск расклейки
-        env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT: ${{ secrets.TELEGRAM_CHAT }}
-        run: |
-          python poster.py
+# Проверяем секреты
+api_key = os.getenv("GROQ_API_KEY")
+tg_token = os.getenv("TELEGRAM_TOKEN")
+tg_chat = os.getenv("TELEGRAM_CHAT")
+
+print(f"🔑 GROQ_API_KEY: {'✅ Найден' if api_key else '❌ НЕ НАЙДЕН'}")
+print(f"🔑 TELEGRAM_TOKEN: {'✅ Найден' if tg_token else '❌ НЕ НАЙДЕН'}")
+print(f"🔑 TELEGRAM_CHAT: {'✅ Найден' if tg_chat else '❌ НЕ НАЙДЕН'}")
+
+# Пытаемся отправить тестовое сообщение в Telegram
+if tg_token and tg_chat:
+    try:
+        response = requests.post(
+            f"https://api.telegram.org/bot{tg_token}/sendMessage",
+            json={"chat_id": tg_chat, "text": "🚀 Бот успешно запущен на GitHub Actions!"},
+            timeout=30
+        )
+        if response.status_code == 200:
+            print("✅ Тестовое сообщение отправлено в Telegram!")
+        else:
+            print(f"⚠️ Ошибка Telegram: {response.text}")
+    except Exception as e:
+        print(f"⚠️ Ошибка отправки: {e}")
+else:
+    print("⚠️ Telegram не настроен, пропускаем отправку")
+
+print("✅ Тест завершен!")
