@@ -10,17 +10,18 @@ jobs:
     
     steps:
       - name: Клонирование репозитория
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       
       - name: Установка Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
       
       - name: Установка зависимостей
         run: |
           sudo apt-get update
           sudo apt-get install -y chromium-browser chromium-chromedriver
+          pip install --upgrade pip
           pip install selenium requests openai webdriver-manager
       
       - name: Запуск расклейки
@@ -30,12 +31,3 @@ jobs:
           TELEGRAM_CHAT: ${{ secrets.TELEGRAM_CHAT }}
         run: |
           python poster.py
-      
-      - name: Сохранение статистики
-        if: always()
-        uses: actions/upload-artifact@v2
-        with:
-          name: poster-data
-          path: |
-            stats.json
-            history.json
