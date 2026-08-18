@@ -40,7 +40,7 @@ TOKEN_DATA = {
 }
 
 # ============================================
-# 2. БАНК ГОТОВЫХ ПОСТОВ (из твоих материалов)
+# 2. БАНК ГОТОВЫХ ПОСТОВ
 # ============================================
 POST_TEMPLATES = {
     "main": [
@@ -140,7 +140,7 @@ POST_TEMPLATES = {
 }
 
 # ============================================
-# 3. ГЕНЕРАТОР ПОСТОВ (ИИ + ШАБЛОНЫ)
+# 3. ГЕНЕРАТОР ПОСТОВ
 # ============================================
 class PostGenerator:
     def __init__(self):
@@ -153,19 +153,14 @@ class PostGenerator:
         )
     
     def generate_post(self, post_type="random"):
-        """Генерирует пост из шаблонов или через ИИ"""
-        
-        # Если нужен конкретный тип
         if post_type in POST_TEMPLATES:
             template = random.choice(POST_TEMPLATES[post_type])
         else:
-            # Смешиваем все типы
             all_templates = []
             for templates in POST_TEMPLATES.values():
                 all_templates.extend(templates)
             template = random.choice(all_templates)
         
-        # Заполняем переменные
         post = template.format(
             website=TOKEN_DATA["links"]["website"],
             telegram=TOKEN_DATA["links"]["telegram"],
@@ -179,8 +174,7 @@ class PostGenerator:
             hashtags=TOKEN_DATA["hashtags"]
         )
         
-        # Иногда генерируем через ИИ для разнообразия
-        if random.random() < 0.2:  # 20% постов через ИИ
+        if random.random() < 0.2:
             try:
                 response = self.client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
@@ -210,8 +204,7 @@ class PostGenerator:
                     temperature=0.9,
                     max_tokens=300
                 )
-                ai_post = response.choices[0].message.content.strip()
-                return ai_post
+                return response.choices[0].message.content.strip()
             except:
                 pass
         
@@ -224,7 +217,7 @@ class CryptoPoster:
     def __init__(self):
         self.generator = PostGenerator()
         self.stats = {"posted": 0, "failed": 0, "platforms": {}}
-        self.posted_history = []  # Чтобы не повторяться
+        self.posted_history = []
         self.load_stats()
     
     def load_stats(self):
@@ -290,9 +283,8 @@ class CryptoPoster:
             return False
     
     def post_to_telegram(self, text):
-        """Постит в Telegram-канал (если есть)"""
         bot_token = os.getenv("TELEGRAM_TOKEN")
-        channel_id = os.getenv("TELEGRAM_CHANNEL")  # Отдельный канал для расклейки
+        channel_id = os.getenv("TELEGRAM_CHAT")
         
         if bot_token and channel_id:
             try:
@@ -309,12 +301,6 @@ class CryptoPoster:
                 print(f"⚠️ Ошибка Telegram: {e}")
                 return False
         return False
-    
-    def post_to_twitter(self, text):
-        """Постит в Twitter (заглушка, нужен API)"""
-        print(f"🐦 Twitter: {text[:50]}...")
-        # Тут нужен Twitter API v2
-        return True
     
     def send_report(self):
         bot_token = os.getenv("TELEGRAM_TOKEN")
@@ -353,7 +339,6 @@ class CryptoPoster:
         print("=" * 50)
         
         for i in range(posts_count):
-            # Выбираем тип поста (чередуем)
             post_types = ["main", "short", "investor", "dev", "teaser"]
             post_type = random.choice(post_types)
             
@@ -361,10 +346,8 @@ class CryptoPoster:
             post_text = self.generator.generate_post(post_type)
             print(f"📄 {post_text[:100]}...")
             
-            # Постим на все площадки
             self.post_to_avito(post_text)
             self.post_to_telegram(post_text)
-            self.post_to_twitter(post_text)
             
             if i < posts_count - 1:
                 sleep_time = random.randint(300, 900)
