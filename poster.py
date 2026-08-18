@@ -3,11 +3,7 @@ import time
 import random
 import json
 import requests
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from openai import OpenAI
 
 # ============================================
 # ДАННЫЕ ТВОЕГО ТОКЕНА
@@ -23,33 +19,38 @@ TOKEN_DATA = {
     "links": {
         "website": "https://onetwothree.xyz",
         "telegram": "https://t.me/onetwothree"
+    },
+    "prices": {
+        "ONE": "$0.01",
+        "TWO": "€0.05", 
+        "THREE": "£0.10"
     }
 }
 
 # ============================================
-# 1. ГЕНЕРАТОР ПОСТОВ (русский + английский + китайский)
+# ГЕНЕРАТОР ПОСТОВ
 # ============================================
 class PostGenerator:
     def __init__(self):
         api_key = os.getenv("GROQ_API_KEY")
         self.use_ai = bool(api_key)
         if self.use_ai:
-            from openai import OpenAI
             self.client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=api_key)
         else:
             self.client = None
-
+    
     def generate_posts(self):
         """Генерирует посты на русском, английском и китайском"""
         
+        # Базовые посты (русский)
         russian_posts = [
             f"""One•Two•Three ($ONE, €TWO, £THREE) — первая прогрессивная финтех-экосистема на Solana.
 
 Три токена. Три валюты. Три ценовых уровня. Один кошелёк.
 
-· $ONE — микро-вход (доступный каждому)
-· €TWO — средний чек (ежедневные траты)
-· £THREE — крупные микро-платежи
+· $ONE — микро-вход (доступный каждому) — {TOKEN_DATA['prices']['ONE']}
+· €TWO — средний чек (ежедневные траты) — {TOKEN_DATA['prices']['TWO']}
+· £THREE — крупные микро-платежи — {TOKEN_DATA['prices']['THREE']}
 
 🔹 Технологии: Solana (мгновенные транзакции, комиссия < $0.001)
 🔹 Ликвидность: Meteora DAMM V2
@@ -60,60 +61,134 @@ TG: @onetwothree
 
 #ONE #TWO #THREE #Solana #Crypto #DeFi #MicroPayments""",
 
-            f"""One•Two•Three — инвестиционная логика:
+            f"""One•Two•Three — инвестиционная логика на Solana!
 
 📊 Эмиссия:
-· $ONE: 9,000,000,000,000,000
-· €TWO: 999,000,000,000,000
-· £THREE: 99,000,000,000,000
+· $ONE: 9,000,000,000,000,000 ({TOKEN_DATA['prices']['ONE']})
+· €TWO: 999,000,000,000,000 ({TOKEN_DATA['prices']['TWO']})
+· £THREE: 99,000,000,000,000 ({TOKEN_DATA['prices']['THREE']})
 
 💰 Ценовая лестница: 1¢ → 5¢ → 10¢
 
-🔐 Безопасность:
-· Mint Authority отключён
-· Ликвидность заблокирована на 365 дней
+🔐 Безопасность: Mint Authority отключён, LP заблокирована на 365 дней
+⚡ Solana: 65 000 TPS, комиссия < $0.001
 
-🌍 Почему Solana: 65 000 TPS, комиссия < $0.001
+#ONE #TWO #THREE #Solana #DeFi #CryptoInvesting""",
 
-#ONE #TWO #THREE #Solana #DeFi #Investing"""
+            f"""🚀 Токены One•Two•Three уже на Meteora!
+
+$ONE (${TOKEN_DATA['prices']['ONE']}) — микро-вход
+€TWO ({TOKEN_DATA['prices']['TWO']}) — ежедневные траты  
+£THREE ({TOKEN_DATA['prices']['THREE']}) — крупные платежи
+
+✅ Мгновенные транзакции на Solana
+✅ Комиссия < $0.001
+✅ Ликвидность заблокирована
+
+🔗 Сайт: {TOKEN_DATA['links']['website']}
+📱 TG: @onetwothree
+
+#ONE #TWO #THREE #Solana #Web3 #CryptoNews"""
         ]
         
-        english_posts = []
-        chinese_posts = []
+        # Посты на английском
+        english_posts = [
+            f"""One•Two•Three ($ONE, €TWO, £THREE) — the first progressive fintech ecosystem on Solana.
+
+Three tokens. Three currencies. Three price levels. One wallet.
+
+· $ONE — micro-entry (for everyone) — {TOKEN_DATA['prices']['ONE']}
+· €TWO — medium check (daily spending) — {TOKEN_DATA['prices']['TWO']}
+· £THREE — large micro-payments — {TOKEN_DATA['prices']['THREE']}
+
+🔹 Tech: Solana (instant txs, fee < $0.001)
+🔹 Liquidity: Meteora DAMM V2
+🔹 Security: Audited, LP locked 365 days
+
+Website: {TOKEN_DATA['links']['website']}
+TG: @onetwothree
+
+#ONE #TWO #THREE #Solana #Crypto #DeFi #MicroPayments""",
+
+            f"""🚀 One•Two•Three tokens are LIVE on Meteora!
+
+$ONE ({TOKEN_DATA['prices']['ONE']}) — micro-entry
+€TWO ({TOKEN_DATA['prices']['TWO']}) — daily spending
+£THREE ({TOKEN_DATA['prices']['THREE']}) — large payments
+
+✅ Instant txs on Solana
+✅ Fee < $0.001
+✅ LP locked 365 days
+
+🔗 Website: {TOKEN_DATA['links']['website']}
+📱 TG: @onetwothree
+
+#ONE #TWO #THREE #Solana #Web3 #DeFi #Crypto"""
+        ]
         
+        # Посты на китайском
+        chinese_posts = [
+            f"""One•Two•Three ($ONE, €TWO, £THREE) — Solana 上首个渐进式金融科技生态系统。
+
+三种代币。三种货币。三个价格层级。一个钱包。
+
+· $ONE — 微支付入口 {TOKEN_DATA['prices']['ONE']}
+· €TWO — 日常消费 {TOKEN_DATA['prices']['TWO']}
+· £THREE — 大额微支付 {TOKEN_DATA['prices']['THREE']}
+
+🔹 技术: Solana (即时交易, 手续费 < $0.001)
+🔹 流动性: Meteora DAMM V2
+🔹 安全: 审计, LP锁定365天
+
+网站: {TOKEN_DATA['links']['website']}
+TG: @onetwothree
+
+#ONE #TWO #THREE #Solana #加密货币 #DeFi #微支付""",
+
+            f"""🚀 One•Two•Three 代币已在 Meteora 上线！
+
+$ONE ({TOKEN_DATA['prices']['ONE']}) — 微支付入口
+€TWO ({TOKEN_DATA['prices']['TWO']}) — 日常消费
+£THREE ({TOKEN_DATA['prices']['THREE']}) — 大额支付
+
+✅ Solana 即时交易
+✅ 手续费 < $0.001
+✅ LP锁定365天
+
+🔗 网站: {TOKEN_DATA['links']['website']}
+📱 TG: @onetwothree
+
+#ONE #TWO #THREE #Solana #Web3 #DeFi #加密货币"""
+        ]
+        
+        # Если есть AI — делаем уникальные посты
         if self.use_ai and self.client:
-            for post in russian_posts:
-                try:
-                    eng_response = self.client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
-                        messages=[{"role": "system", "content": "Translate to English. Keep emojis and hashtags."}, {"role": "user", "content": post}],
-                        temperature=0.5, max_tokens=500
-                    )
-                    english_posts.append(eng_response.choices[0].message.content)
-                    
-                    ch_response = self.client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
-                        messages=[{"role": "system", "content": "Translate to Chinese (Simplified). Keep emojis and hashtags."}, {"role": "user", "content": post}],
-                        temperature=0.5, max_tokens=500
-                    )
-                    chinese_posts.append(ch_response.choices[0].message.content)
-                    print(f"✅ Пост переведен на EN и ZH")
-                except Exception as e:
-                    print(f"⚠️ Ошибка перевода: {e}")
-                    # fallback
-                    english_posts.append(f"🚀 One•Two•Three — Micro-payments on Solana!\n\n· $ONE = $0.01\n· €TWO = €0.05\n· £THREE = £0.10\n\n#ONE #TWO #THREE #Solana")
-                    chinese_posts.append(f"🚀 One•Two•Three — Solana 微支付生态！\n\n· $ONE = $0.01\n· €TWO = €0.05\n· £THREE = £0.10\n\n#ONE #TWO #THREE #Solana")
-        else:
-            # fallback если нет API
-            english_posts = [f"🚀 One•Two•Three — Micro-payments on Solana! #ONE #TWO #THREE #Solana"]
-            chinese_posts = [f"🚀 One•Two•Three — Solana 微支付生态！ #ONE #TWO #THREE #Solana"]
+            try:
+                # Генерируем уникальные посты на английском
+                response = self.client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{
+                        "role": "system",
+                        "content": "You are a crypto marketer. Generate 3 unique promotional posts for One•Two•Three tokens on Solana. Each post 100-200 words. Include prices, features, and call to action."
+                    }, {
+                        "role": "user",
+                        "content": f"Token: One•Two•Three ($ONE, €TWO, £THREE). Prices: $ONE={TOKEN_DATA['prices']['ONE']}, €TWO={TOKEN_DATA['prices']['TWO']}, £THREE={TOKEN_DATA['prices']['THREE']}. Website: {TOKEN_DATA['links']['website']}"
+                    }],
+                    temperature=0.9,
+                    max_tokens=600
+                )
+                ai_eng = response.choices[0].message.content.split('\n\n')
+                english_posts.extend(ai_eng[:2])
+                print("✅ AI сгенерировал дополнительные посты на английском")
+            except Exception as e:
+                print(f"⚠️ Ошибка AI: {e}")
         
         return {"ru": russian_posts, "en": english_posts, "zh": chinese_posts}
 
 # ============================================
-# 2. РЕАЛЬНЫЙ ПОСТЕР НА АВИТО
+# ПОСТЕР НА ПЛОЩАДКИ (Telegram, Twitter, Discord)
 # ============================================
-class AvitoPoster:
+class InternationalPoster:
     def __init__(self):
         self.stats = {"posted": 0, "failed": 0, "platforms": {}}
         self.load_stats()
@@ -129,110 +204,113 @@ class AvitoPoster:
         with open("stats.json", "w") as f:
             json.dump(self.stats, f, indent=2)
     
-    def _init_driver(self):
-        options = Options()
-        options.add_argument('--headless')  # убрать для отладки
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--window-size=1920,1080')
-        options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36')
-        return webdriver.Chrome(options=options)
-    
-    def post_to_avito(self, title, description, lang="ru"):
-        driver = self._init_driver()
-        try:
-            print(f"📤 Avito ({lang.upper()}) — открываем страницу...")
-            driver.get("https://www.avito.ru/additem")
-            time.sleep(5)
-            
-            wait = WebDriverWait(driver, 15)
-            
-            # Заполняем заголовок (название)
-            try:
-                title_field = wait.until(EC.presence_of_element_located((By.NAME, "title")))
-                title_field.clear()
-                title_field.send_keys(title[:50])
-                time.sleep(1)
-                print(f"   ✅ Заголовок: {title[:30]}...")
-            except Exception as e:
-                print(f"   ❌ Ошибка заголовка: {e}")
-                driver.quit()
-                return False
-            
-            # Заполняем описание
-            try:
-                desc_field = driver.find_element(By.NAME, "description")
-                desc_field.clear()
-                desc_field.send_keys(description)
-                time.sleep(1)
-                print(f"   ✅ Описание: {len(description)} символов")
-            except Exception as e:
-                print(f"   ❌ Ошибка описания: {e}")
-                driver.quit()
-                return False
-            
-            # Нажимаем кнопку "Опубликовать"
-            try:
-                publish_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Опубликовать')]")
-                publish_btn.click()
-                time.sleep(5)
-                print(f"   ✅ Кнопка 'Опубликовать' нажата!")
-                self.stats["posted"] += 1
-                self.stats["platforms"][f"avito_{lang}"] = self.stats["platforms"].get(f"avito_{lang}", 0) + 1
-                driver.quit()
-                return True
-            except Exception as e:
-                print(f"   ❌ Кнопка не найдена: {e}")
-                driver.quit()
-                return False
-                
-        except Exception as e:
-            print(f"⚠️ Критическая ошибка Avito ({lang}): {e}")
-            driver.quit()
-            self.stats["failed"] += 1
-            return False
-    
-    def post_to_telegram(self, text, lang="ru"):
+    def post_to_telegram(self, text):
+        """Отправка в Telegram"""
         bot_token = os.getenv("TELEGRAM_TOKEN")
         chat_id = os.getenv("TELEGRAM_CHAT")
         if not bot_token or not chat_id:
             return False
         
         try:
-            label = {"ru": "🇷🇺", "en": "🇬🇧", "zh": "🇨🇳"}.get(lang, "")
             response = requests.post(
                 f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                json={"chat_id": chat_id, "text": f"{label}\n\n{text}", "parse_mode": "Markdown"},
+                json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
                 timeout=30
             )
             if response.status_code == 200:
-                print(f"✅ Telegram ({lang}) отправлен")
+                print("✅ Telegram — отправлено!")
                 self.stats["posted"] += 1
-                self.stats["platforms"][f"telegram_{lang}"] = self.stats["platforms"].get(f"telegram_{lang}", 0) + 1
+                self.stats["platforms"]["telegram"] = self.stats["platforms"].get("telegram", 0) + 1
                 return True
             return False
         except Exception as e:
-            print(f"⚠️ Ошибка Telegram ({lang}): {e}")
+            print(f"⚠️ Ошибка Telegram: {e}")
+            return False
+    
+    def post_to_twitter(self, text):
+        """Отправка в Twitter/X через API"""
+        try:
+            import tweepy
+            
+            api_key = os.getenv("TWITTER_API_KEY")
+            api_secret = os.getenv("TWITTER_API_SECRET")
+            access_token = os.getenv("TWITTER_ACCESS_TOKEN")
+            access_secret = os.getenv("TWITTER_ACCESS_SECRET")
+            
+            if not all([api_key, api_secret, access_token, access_secret]):
+                print("⚠️ Twitter не настроен (нет ключей)")
+                return False
+            
+            # Twitter API v2
+            client = tweepy.Client(
+                consumer_key=api_key,
+                consumer_secret=api_secret,
+                access_token=access_token,
+                access_token_secret=access_secret
+            )
+            
+            # Обрезаем до 280 символов
+            tweet_text = text[:277] + "..." if len(text) > 280 else text
+            client.create_tweet(text=tweet_text)
+            print("✅ Twitter — опубликовано!")
+            self.stats["posted"] += 1
+            self.stats["platforms"]["twitter"] = self.stats["platforms"].get("twitter", 0) + 1
+            return True
+            
+        except Exception as e:
+            print(f"⚠️ Ошибка Twitter: {e}")
+            return False
+    
+    def post_to_discord(self, text):
+        """Отправка в Discord через Webhook"""
+        webhook_url = os.getenv("DISCORD_WEBHOOK")
+        if not webhook_url:
+            return False
+        
+        try:
+            # Discord лимит 2000 символов
+            discord_text = text[:1900] + "..." if len(text) > 2000 else text
+            response = requests.post(webhook_url, json={"content": discord_text}, timeout=30)
+            if response.status_code == 204:
+                print("✅ Discord — отправлено!")
+                self.stats["posted"] += 1
+                self.stats["platforms"]["discord"] = self.stats["platforms"].get("discord", 0) + 1
+                return True
+            return False
+        except Exception as e:
+            print(f"⚠️ Ошибка Discord: {e}")
             return False
     
     def send_report(self):
+        """Отчет в Telegram"""
         bot_token = os.getenv("TELEGRAM_TOKEN")
         chat_id = os.getenv("TELEGRAM_CHAT")
         if bot_token and chat_id:
             try:
-                text = f"📊 **Отчет расклейки**\n\n✅ Всего постов: {self.stats['posted']}\n❌ Ошибок: {self.stats['failed']}\n\n📋 По площадкам:"
+                text = f"""
+📊 **One•Two•Three | Отчет расклейки**
+
+✅ Всего постов: {self.stats['posted']}
+❌ Ошибок: {self.stats['failed']}
+
+📋 По площадкам:"""
                 for platform, count in self.stats.get("platforms", {}).items():
                     text += f"\n  • {platform}: {count}"
                 text += f"\n\n🕐 {time.strftime('%Y-%m-%d %H:%M:%S')}"
-                requests.post(f"https://api.telegram.org/bot{bot_token}/sendMessage", json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}, timeout=30)
+                
+                requests.post(
+                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                    json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
+                    timeout=30
+                )
                 print("📨 Отчет отправлен")
             except Exception as e:
                 print(f"⚠️ Ошибка отчета: {e}")
     
     def run(self):
-        print("🚀 Avito-постер запущен!")
-        print("🌍 Языки: Русский 🇷🇺, English 🇬🇧, 中文 🇨🇳")
+        print("🚀 Международный расклейщик One•Two•Three запущен!")
+        print("🌍 Площадки: Telegram, Twitter, Discord")
+        print("🌐 Языки: Русский, English, 中文")
         print("=" * 60)
         
         generator = PostGenerator()
@@ -244,17 +322,15 @@ class AvitoPoster:
             
             for i, text in enumerate(texts):
                 print(f"\n  Пост {i+1}/{len(texts)}")
-                title = text[:50]
-                print(f"  📌 {title}...")
+                print(f"  📌 {text[:80]}...")
                 
-                # Отправляем в Telegram (как отчет)
-                self.post_to_telegram(text, lang)
-                
-                # Публикуем на Авито
-                self.post_to_avito(title, text, lang)
+                # Отправляем на все площадки
+                self.post_to_telegram(text)
+                self.post_to_twitter(text)
+                self.post_to_discord(text)
                 
                 if i < len(texts) - 1:
-                    wait_time = random.randint(60, 120)  # 1-2 минуты
+                    wait_time = random.randint(60, 180)
                     print(f"  💤 Ждем {wait_time} секунд...")
                     time.sleep(wait_time)
         
@@ -266,5 +342,5 @@ class AvitoPoster:
 # ЗАПУСК
 # ============================================
 if __name__ == "__main__":
-    poster = AvitoPoster()
+    poster = InternationalPoster()
     poster.run()
