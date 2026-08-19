@@ -7,7 +7,7 @@ from openai import OpenAI
 import google.generativeai as genai
 
 # ============================================
-# ДАННЫЕ ТВОЕГО ТОКЕНА
+# ПРАВИЛЬНЫЕ ДАННЫЕ ТОКЕНА
 # ============================================
 TOKEN_DATA = {
     "name": "One•Two•Three",
@@ -17,10 +17,12 @@ TOKEN_DATA = {
         "TWO": "H5kjSzmxW98iZ2Xvx7e45hxxyDjMYTk6z8aJfeFsj46d",
         "THREE": "uM1kuvsLYauDQZh8g6RrNw3oLAfSAvgEojvJT5hCLNV"
     },
-    "links": {
-        "website": "https://onetwothree.xyz",
-        "telegram": "https://t.me/onetwothree"
+    "sites": {
+        "ONE": "https://123tokens.github.io/one/",
+        "TWO": "https://123tokens.github.io/two/",
+        "THREE": "https://123tokens.github.io/three/"
     },
+    "telegram": "https://t.me/onetwothree",
     "prices": {
         "ONE": "$0.01",
         "TWO": "€0.05", 
@@ -41,31 +43,36 @@ class ArticleGenerator:
             self.model = None
     
     def generate_article(self):
-        """Генерирует SEO-статью про One•Two•Three"""
+        """Генерирует SEO-статью про One•Two•Three с правильными ссылками"""
         if not self.model:
             return None, None
         
         try:
             prompt = f"""
-            Напиши статью про крипто-токен {TOKEN_DATA['name']} на Solana.
+            Напиши статью про крипто-экосистему One•Two•Three на Solana.
 
-            Информация о токене:
-            - Три токена: $ONE ({TOKEN_DATA['prices']['ONE']}), €TWO ({TOKEN_DATA['prices']['TWO']}), £THREE ({TOKEN_DATA['prices']['THREE']})
-            - Сеть: Solana (мгновенные транзакции, комиссия < $0.001)
-            - Адреса контрактов:
-              $ONE: {TOKEN_DATA['contracts']['ONE']}
-              €TWO: {TOKEN_DATA['contracts']['TWO']}
-              £THREE: {TOKEN_DATA['contracts']['THREE']}
-            - Сайт: {TOKEN_DATA['links']['website']}
-            - Telegram: {TOKEN_DATA['links']['telegram']}
+            Информация о токенах:
+            - $ONE — микро-вход — {TOKEN_DATA['prices']['ONE']}
+              Сайт: {TOKEN_DATA['sites']['ONE']}
+              Контракт: {TOKEN_DATA['contracts']['ONE']}
+            
+            - €TWO — средний чек — {TOKEN_DATA['prices']['TWO']}
+              Сайт: {TOKEN_DATA['sites']['TWO']}
+              Контракт: {TOKEN_DATA['contracts']['TWO']}
+            
+            - £THREE — крупные платежи — {TOKEN_DATA['prices']['THREE']}
+              Сайт: {TOKEN_DATA['sites']['THREE']}
+              Контракт: {TOKEN_DATA['contracts']['THREE']}
+
+            Сеть: Solana (мгновенные транзакции, комиссия < $0.001)
+            Telegram: {TOKEN_DATA['telegram']}
 
             Требования:
             - Заголовок: кликбейтный, с ключевыми словами
             - Длина: 200-300 слов
-            - Структура: вступление, описание токенов, технологии, вывод
-            - Используй эмодзи и маркированные списки
+            - Структура: вступление, описание каждого токена, технологии, вывод
+            - В конце: ссылки на все три сайта и Telegram
             - Язык: русский
-            - В конце: ссылка на сайт и призыв к действию
 
             Верни в формате JSON:
             {{"title": "Заголовок", "content": "Полный текст статьи"}}
@@ -74,7 +81,6 @@ class ArticleGenerator:
             response = self.model.generate_content(prompt)
             result = response.text.strip()
             
-            # Парсим JSON
             try:
                 if result.startswith('{'):
                     data = json.loads(result)
@@ -102,21 +108,25 @@ class TelegraphPoster:
         self.stats = {"articles": 0, "failed": 0}
     
     def post_to_telegraph(self, title, content):
-        """Публикует статью на Telegra.ph"""
+        """Публикует статью на Telegra.ph с правильными ссылками"""
         try:
             url = "https://api.telegra.ph/createPage"
             
-            # Форматируем контент для Telegraph (HTML)
             content_html = content.replace('\n', '<br>')
-            
-            # Добавляем ссылку на сайт в конце
-            content_html += f'<br><br>🌐 <a href="{TOKEN_DATA["links"]["website"]}">{TOKEN_DATA["links"]["website"]}</a><br>📱 <a href="{TOKEN_DATA["links"]["telegram"]}">{TOKEN_DATA["links"]["telegram"]}</a>'
+            content_html += f"""
+            <br><br>
+            🌐 <b>Официальные сайты токенов:</b><br>
+            🟢 $ONE: <a href="{TOKEN_DATA['sites']['ONE']}">{TOKEN_DATA['sites']['ONE']}</a><br>
+            🟡 €TWO: <a href="{TOKEN_DATA['sites']['TWO']}">{TOKEN_DATA['sites']['TWO']}</a><br>
+            🔵 £THREE: <a href="{TOKEN_DATA['sites']['THREE']}">{TOKEN_DATA['sites']['THREE']}</a><br>
+            📱 Telegram: <a href="{TOKEN_DATA['telegram']}">{TOKEN_DATA['telegram']}</a>
+            """
             
             data = {
                 "title": title,
                 "content": content_html,
                 "author_name": "One•Two•Three",
-                "author_url": TOKEN_DATA["links"]["website"]
+                "author_url": TOKEN_DATA['sites']['ONE']
             }
             
             response = requests.post(url, json=data, timeout=30)
@@ -158,71 +168,74 @@ class BinanceSquarePoster:
             json.dump(self.stats, f, indent=2)
     
     def generate_post(self, lang="en"):
-        """Генерирует пост для Binance Square"""
-        # Посты на английском
+        """Генерирует пост с правильными ссылками"""
+        
         en_posts = [
-            f"""🚀 One•Two•Three ($ONE, €TWO, £THREE) — the first progressive fintech ecosystem on Solana!
+            f"""🚀 One•Two•Three ($ONE, €TWO, £THREE) — экосистема на Solana!
 
-Three tokens. Three currencies. Three price levels. One wallet.
+Три токена. Три уровня. Один кошелёк.
 
-· $ONE — micro-entry — {TOKEN_DATA['prices']['ONE']}
-· €TWO — daily spending — {TOKEN_DATA['prices']['TWO']}
-· £THREE — large micro-payments — {TOKEN_DATA['prices']['THREE']}
+· $ONE — микро-вход — {TOKEN_DATA['prices']['ONE']}
+  🔗 {TOKEN_DATA['sites']['ONE']}
+· €TWO — средний чек — {TOKEN_DATA['prices']['TWO']}
+  🔗 {TOKEN_DATA['sites']['TWO']}
+· £THREE — крупные платежи — {TOKEN_DATA['prices']['THREE']}
+  🔗 {TOKEN_DATA['sites']['THREE']}
 
-🔹 Tech: Solana (instant txs, fee < $0.001)
-🔹 Liquidity: Meteora DAMM V2
-🔹 Security: Audited, LP locked 365 days
+⚡ Solana: мгновенные транзакции, комиссия < $0.001
 
-🌐 Website: {TOKEN_DATA['links']['website']}
 📱 TG: @onetwothree
 
 #ONE #TWO #THREE #Solana #Crypto #DeFi #MicroPayments""",
 
-            f"""💎 One•Two•Three — the smartest payment system on Solana!
+            f"""💎 One•Two•Three — умная платежная система на Solana!
 
-· $ONE ({TOKEN_DATA['prices']['ONE']}) — for everyday micro-tips
-· €TWO ({TOKEN_DATA['prices']['TWO']}) — for daily purchases
-· £THREE ({TOKEN_DATA['prices']['THREE']}) — for premium services
+· $ONE ({TOKEN_DATA['prices']['ONE']}) — микро-платежи
+  {TOKEN_DATA['sites']['ONE']}
+· €TWO ({TOKEN_DATA['prices']['TWO']}) — ежедневные траты
+  {TOKEN_DATA['sites']['TWO']}
+· £THREE ({TOKEN_DATA['prices']['THREE']}) — крупные платежи
+  {TOKEN_DATA['sites']['THREE']}
 
-⚡ 65,000 TPS | Fee < $0.001
-🔒 Audited | LP locked 365 days
+⚡ 65,000 TPS | Комиссия < $0.001
+🔒 Аудит | LP заблокирована 365 дней
 
-🚀 Start using today: {TOKEN_DATA['links']['website']}
-💬 Join community: @onetwothree
+📱 TG: @onetwothree
 
 #ONE #TWO #THREE #Solana #Payments #Crypto #Web3"""
         ]
         
-        # Посты на китайском
         zh_posts = [
-            f"""🚀 One•Two•Three ($ONE, €TWO, £THREE) — Solana 上首个金融科技生态系统！
+            f"""🚀 One•Two•Three ($ONE, €TWO, £THREE) — Solana 上的金融科技生态系统！
 
-三种代币。三种货币。三个价格层级。一个钱包。
+三种代币。三个层级。一个钱包。
 
-· $ONE — 微支付入口 — {TOKEN_DATA['prices']['ONE']}
+· $ONE — 微支付 — {TOKEN_DATA['prices']['ONE']}
+  🔗 {TOKEN_DATA['sites']['ONE']}
 · €TWO — 日常消费 — {TOKEN_DATA['prices']['TWO']}
-· £THREE — 大额微支付 — {TOKEN_DATA['prices']['THREE']}
+  🔗 {TOKEN_DATA['sites']['TWO']}
+· £THREE — 大额支付 — {TOKEN_DATA['prices']['THREE']}
+  🔗 {TOKEN_DATA['sites']['THREE']}
 
-🔹 技术: Solana (即时交易, 手续费 < $0.001)
-🔹 流动性: Meteora DAMM V2
-🔹 安全: 审计, LP锁定365天
+⚡ Solana: 即时交易, 手续费 < $0.001
 
-🌐 网站: {TOKEN_DATA['links']['website']}
 📱 TG: @onetwothree
 
 #ONE #TWO #THREE #Solana #加密货币 #DeFi #微支付""",
 
             f"""💎 One•Two•Three — Solana 上最智能的支付系统！
 
-· $ONE ({TOKEN_DATA['prices']['ONE']}) — 日常微支付
+· $ONE ({TOKEN_DATA['prices']['ONE']}) — 微支付
+  {TOKEN_DATA['sites']['ONE']}
 · €TWO ({TOKEN_DATA['prices']['TWO']}) — 日常消费
-· £THREE ({TOKEN_DATA['prices']['THREE']}) — 高级服务支付
+  {TOKEN_DATA['sites']['TWO']}
+· £THREE ({TOKEN_DATA['prices']['THREE']}) — 大额支付
+  {TOKEN_DATA['sites']['THREE']}
 
 ⚡ 65,000 TPS | 手续费 < $0.001
 🔒 已审计 | LP锁定365天
 
-🚀 立即使用: {TOKEN_DATA['links']['website']}
-💬 加入社区: @onetwothree
+📱 TG: @onetwothree
 
 #ONE #TWO #THREE #Solana #支付 #加密货币 #Web3"""
         ]
@@ -276,7 +289,7 @@ Three tokens. Three currencies. Three price levels. One wallet.
             return False
         
         try:
-            label = {"en": "🇬🇧", "zh": "🇨🇳"}.get(lang, "🌍")
+            label = {"en": "🇬🇧", "zh": "🇨🇳", "ru": "🇷🇺"}.get(lang, "🌍")
             response = requests.post(
                 f"https://api.telegram.org/bot{bot_token}/sendMessage",
                 json={"chat_id": chat_id, "text": f"{label}\n\n{text}", "parse_mode": "Markdown"},
@@ -316,26 +329,22 @@ Three tokens. Three currencies. Three price levels. One wallet.
                 print(f"⚠️ Ошибка отчета: {e}")
     
     def run(self, posts_per_lang=3):
-        """Запуск Binance Square"""
         print("📢 Постим в Binance Square...")
         
         for i in range(posts_per_lang):
-            # Пост на английском
             text_en = self.generate_post("en")
             self.post_to_binance_square(text_en, "en")
             self.post_to_telegram(text_en, "en")
             
-            # Пауза 5 минут между постами
             if i < posts_per_lang - 1:
                 time.sleep(300)
             
-            # Пост на китайском
             text_zh = self.generate_post("zh")
             self.post_to_binance_square(text_zh, "zh")
             self.post_to_telegram(text_zh, "zh")
             
             if i < posts_per_lang - 1:
-                wait_time = random.randint(3600, 7200)  # 1-2 часа
+                wait_time = random.randint(3600, 7200)
                 wait_hours = wait_time // 3600
                 wait_minutes = (wait_time % 3600) // 60
                 print(f"  💤 Ждем {wait_hours} часов {wait_minutes} минут...")
@@ -357,7 +366,6 @@ class MainBot:
         print("🌐 Площадки: Binance Square + Telegra.ph + Telegram")
         print("=" * 60)
         
-        # 1. Генерируем и публикуем статью в Telegraph
         print("\n📝 Генерируем SEO-статью через Gemini...")
         title, content = self.article_gen.generate_article()
         
@@ -365,11 +373,9 @@ class MainBot:
             print(f"📌 Заголовок: {title}")
             print(f"📄 Контент: {len(content)} символов")
             
-            # Публикуем в Telegraph
             article_url = self.telegraph.post_to_telegraph(title, content)
             
             if article_url:
-                # Отправляем ссылку в Telegram
                 self.binance.post_to_telegram(
                     f"📝 **Новая статья про One•Two•Three**\n\n{title}\n\n🔗 Читать: {article_url}",
                     lang="ru"
@@ -380,18 +386,13 @@ class MainBot:
         else:
             print("⚠️ Не удалось сгенерировать статью")
         
-        # 2. Постим в Binance Square
         print("\n📢 Постим в Binance Square...")
         self.binance.run(posts_per_lang=3)
         
-        # 3. Отчет
         self.binance.send_report()
         
         print("\n✅ Все циклы завершены!")
 
-# ============================================
-# ЗАПУСК
-# ============================================
 if __name__ == "__main__":
     bot = MainBot()
     bot.run()
