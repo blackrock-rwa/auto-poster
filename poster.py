@@ -28,7 +28,7 @@ TOKEN_DATA = {
 }
 
 # ============================================
-# ГЕНЕРАТОР ПОСТОВ (только EN + ZH)
+# ГЕНЕРАТОР ПОСТОВ
 # ============================================
 class PostGenerator:
     def __init__(self):
@@ -39,11 +39,37 @@ class PostGenerator:
         else:
             self.client = None
     
-    def generate_posts(self, count=5):
-        """Генерирует посты на английском и китайском"""
+    def generate_post(self, lang="en"):
+        """Генерирует 1 уникальный пост на указанном языке"""
         
-        # Базовые посты на английском
-        english_posts = [
+        if self.use_ai and self.client:
+            try:
+                lang_name = {"en": "English", "zh": "Chinese (Simplified)"}[lang]
+                system_prompt = f"You are a crypto marketer. Generate 1 unique promotional post for One•Two•Three tokens on Solana. Write in {lang_name}. 100-200 words. Include prices, features, and call to action. Use emojis and hashtags."
+                
+                response = self.client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{
+                        "role": "system",
+                        "content": system_prompt
+                    }, {
+                        "role": "user",
+                        "content": f"Token: One•Two•Three ($ONE, €TWO, £THREE). Prices: $ONE={TOKEN_DATA['prices']['ONE']}, €TWO={TOKEN_DATA['prices']['TWO']}, £THREE={TOKEN_DATA['prices']['THREE']}. Website: {TOKEN_DATA['links']['website']}"
+                    }],
+                    temperature=0.9,
+                    max_tokens=500
+                )
+                post = response.choices[0].message.content.strip()
+                if len(post) > 50:
+                    return post
+                else:
+                    raise Exception("Post too short")
+                    
+            except Exception as e:
+                print(f"⚠️ Ошибка AI ({lang}): {e}")
+        
+        # Fallback: базовые шаблоны, если AI не сработал
+        templates_en = [
             f"""🚀 One•Two•Three ($ONE, €TWO, £THREE) — the first progressive fintech ecosystem on Solana!
 
 Three tokens. Three currencies. Three price levels. One wallet.
@@ -73,11 +99,26 @@ Three tokens. Three currencies. Three price levels. One wallet.
 🚀 Start using today: {TOKEN_DATA['links']['website']}
 💬 Join community: @onetwothree
 
-#ONE #TWO #THREE #Solana #Payments #Crypto #Web3"""
+#ONE #TWO #THREE #Solana #Payments #Crypto #Web3""",
+
+            f"""🔥 One•Two•Three is changing the game on Solana!
+
+3 Tokens, 3 Currencies, 3 Price Levels — 1 Wallet.
+
+✅ $ONE ({TOKEN_DATA['prices']['ONE']}) — Micro-payments
+✅ €TWO ({TOKEN_DATA['prices']['TWO']}) — Daily spending  
+✅ £THREE ({TOKEN_DATA['prices']['THREE']}) — Big purchases
+
+🔗 Powered by Solana (65k TPS, fee < $0.001)
+🛡️ Audited | LP locked 365 days
+
+📲 Try it now: {TOKEN_DATA['links']['website']}
+💬 Chat: @onetwothree
+
+#ONE #TWO #THREE #Solana #DeFi #Crypto #MicroPayments"""
         ]
         
-        # Базовые посты на китайском
-        chinese_posts = [
+        templates_zh = [
             f"""🚀 One•Two•Three ($ONE, €TWO, £THREE) — Solana 上首个金融科技生态系统！
 
 三种代币。三种货币。三个价格层级。一个钱包。
@@ -107,58 +148,29 @@ Three tokens. Three currencies. Three price levels. One wallet.
 🚀 立即使用: {TOKEN_DATA['links']['website']}
 💬 加入社区: @onetwothree
 
-#ONE #TWO #THREE #Solana #支付 #加密货币 #Web3"""
+#ONE #TWO #THREE #Solana #支付 #加密货币 #Web3""",
+
+            f"""🔥 One•Two•Three 正在改变 Solana 上的支付方式！
+
+3种代币，3种货币，3个价格层级 — 1个钱包。
+
+✅ $ONE ({TOKEN_DATA['prices']['ONE']}) — 微支付
+✅ €TWO ({TOKEN_DATA['prices']['TWO']}) — 日常消费
+✅ £THREE ({TOKEN_DATA['prices']['THREE']}) — 大额支付
+
+🔗 基于 Solana (65k TPS, 手续费 < $0.001)
+🛡️ 已审计 | LP锁定365天
+
+📲 立即体验: {TOKEN_DATA['links']['website']}
+💬 聊天: @onetwothree
+
+#ONE #TWO #THREE #Solana #DeFi #加密货币 #微支付"""
         ]
         
-        # Если есть Groq AI — генерируем дополнительные уникальные посты
-        if self.use_ai and self.client:
-            try:
-                # Генерация на английском
-                response = self.client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[{
-                        "role": "system",
-                        "content": "You are a crypto marketer. Generate 2 unique promotional posts for One•Two•Three tokens on Solana. Each post 100-200 words. Include prices, features, and call to action. Use emojis and hashtags."
-                    }, {
-                        "role": "user",
-                        "content": f"Token: One•Two•Three ($ONE, €TWO, £THREE). Prices: $ONE={TOKEN_DATA['prices']['ONE']}, €TWO={TOKEN_DATA['prices']['TWO']}, £THREE={TOKEN_DATA['prices']['THREE']}. Website: {TOKEN_DATA['links']['website']}"
-                    }],
-                    temperature=0.9,
-                    max_tokens=500
-                )
-                ai_eng = response.choices[0].message.content.split('\n\n')
-                english_posts.extend(ai_eng[:2])
-                print("✅ AI сгенерировал посты на английском")
-                
-                # Генерация на китайском
-                response = self.client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[{
-                        "role": "system",
-                        "content": "You are a crypto marketer. Generate 2 unique promotional posts for One•Two•Three tokens on Solana in Chinese (Simplified). Each post 100-200 words. Use emojis and hashtags."
-                    }, {
-                        "role": "user",
-                        "content": f"Token: One•Two•Three ($ONE, €TWO, £THREE). Prices: $ONE={TOKEN_DATA['prices']['ONE']}, €TWO={TOKEN_DATA['prices']['TWO']}, £THREE={TOKEN_DATA['prices']['THREE']}. Website: {TOKEN_DATA['links']['website']}"
-                    }],
-                    temperature=0.9,
-                    max_tokens=500
-                )
-                ai_zh = response.choices[0].message.content.split('\n\n')
-                chinese_posts.extend(ai_zh[:2])
-                print("✅ AI сгенерировал посты на китайском")
-                
-            except Exception as e:
-                print(f"⚠️ Ошибка AI: {e}")
-        
-        # Перемешиваем и возвращаем
-        all_posts = []
-        for post in english_posts[:count]:
-            all_posts.append({"lang": "en", "text": post})
-        for post in chinese_posts[:count]:
-            all_posts.append({"lang": "zh", "text": post})
-        
-        random.shuffle(all_posts)
-        return all_posts
+        if lang == "en":
+            return random.choice(templates_en)
+        else:
+            return random.choice(templates_zh)
 
 # ============================================
 # ПОСТЕР НА BINANCE SQUARE
@@ -181,13 +193,11 @@ class BinanceSquarePoster:
             json.dump(self.stats, f, indent=2)
     
     def post_to_binance_square(self, text, lang="en"):
-        """Публикация поста в Binance Square через API"""
         if not self.api_key:
             print("⚠️ BINANCE_SQUARE_API_KEY не найден!")
             return False
         
         try:
-            # Binance Square API endpoint (по документации)
             url = "https://api.binance.com/sapi/v1/square/post"
             
             headers = {
@@ -195,7 +205,6 @@ class BinanceSquarePoster:
                 "Content-Type": "application/json"
             }
             
-            # Данные поста
             payload = {
                 "text": text,
                 "topic": "cryptocurrency",
@@ -221,7 +230,6 @@ class BinanceSquarePoster:
             return False
     
     def post_to_telegram(self, text, lang="en"):
-        """Отправка в Telegram (как отчет)"""
         bot_token = os.getenv("TELEGRAM_TOKEN")
         chat_id = os.getenv("TELEGRAM_CHAT")
         if not bot_token or not chat_id:
@@ -243,7 +251,6 @@ class BinanceSquarePoster:
             return False
     
     def send_report(self):
-        """Отчет в Telegram"""
         bot_token = os.getenv("TELEGRAM_TOKEN")
         chat_id = os.getenv("TELEGRAM_CHAT")
         if bot_token and chat_id:
@@ -268,16 +275,24 @@ class BinanceSquarePoster:
             except Exception as e:
                 print(f"⚠️ Ошибка отчета: {e}")
     
-    def run(self, posts_count=5):
-        """Запуск"""
-        print("🚀 Binance Square + Telegram расклейщик запущен!")
+    def run(self, posts_per_lang=3):
+        """Запуск: 3 EN + 3 ZH = 6 постов за цикл"""
+        print("🚀 One•Two•Three Расклейщик запущен!")
         print(f"🌐 Языки: English 🇬🇧 + 中文 🇨🇳")
-        print(f"📊 Постов за цикл: {posts_count} на каждом языке")
-        print(f"⏰ Пауза: 1-2 часа")
+        print(f"📊 Постов за запуск: {posts_per_lang} EN + {posts_per_lang} ZH = {posts_per_lang * 2}")
+        print(f"⏰ Пауза между постами: 1-2 часа")
         print("=" * 60)
         
         generator = PostGenerator()
-        posts = generator.generate_posts(posts_count)
+        
+        # Создаем список постов: чередуем языки
+        posts = []
+        for i in range(posts_per_lang):
+            posts.append({"lang": "en", "text": generator.generate_post("en")})
+            posts.append({"lang": "zh", "text": generator.generate_post("zh")})
+        
+        # Перемешиваем, чтобы посты чередовались еще сильнее
+        random.shuffle(posts)
         
         for i, post_data in enumerate(posts):
             lang_name = {"en": "English 🇬🇧", "zh": "中文 🇨🇳"}[post_data["lang"]]
@@ -290,7 +305,7 @@ class BinanceSquarePoster:
             # Дублируем в Telegram
             self.post_to_telegram(post_data["text"], post_data["lang"])
             
-            # ⏰ ПАУЗА 1-2 ЧАСА
+            # ⏰ ПАУЗА 1-2 ЧАСА (между постами)
             if i < len(posts) - 1:
                 wait_time = random.randint(3600, 7200)  # 1-2 часа
                 wait_hours = wait_time // 3600
@@ -300,11 +315,11 @@ class BinanceSquarePoster:
         
         self.save_stats()
         self.send_report()
-        print("\n✅ Все циклы завершены!")
+        print("\n✅ Цикл завершен!")
 
 # ============================================
 # ЗАПУСК
 # ============================================
 if __name__ == "__main__":
     poster = BinanceSquarePoster()
-    poster.run(posts_count=3)
+    poster.run(posts_per_lang=3)
