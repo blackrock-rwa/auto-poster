@@ -9,8 +9,7 @@ jobs:
     timeout-minutes: 15
     
     steps:
-      - name: Клонирование репозитория
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
       - name: Установка Python
         uses: actions/setup-python@v4
@@ -20,17 +19,13 @@ jobs:
       - name: Установка зависимостей
         run: |
           pip install --upgrade pip
-          pip install requests openai tweepy discord-webhook
+          pip install requests openai
       
       - name: Запуск расклейки
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT: ${{ secrets.TELEGRAM_CHAT }}
-          TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
-          TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
-          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
-          TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          BINANCE_SQUARE_API_KEY: ${{ secrets.BINANCE_SQUARE_API_KEY }}
         run: |
           python poster.py
