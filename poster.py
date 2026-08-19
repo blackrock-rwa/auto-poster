@@ -7,7 +7,7 @@ from openai import OpenAI
 import google.generativeai as genai
 
 # ============================================
-# ПРАВИЛЬНЫЕ ДАННЫЕ ТОКЕНА
+# ДАННЫЕ ТОКЕНА (ТРИ САЙТА)
 # ============================================
 TOKEN_DATA = {
     "name": "One•Two•Three",
@@ -31,7 +31,7 @@ TOKEN_DATA = {
 }
 
 # ============================================
-# ГЕНЕРАТОР СТАТЕЙ (Gemini)
+# ГЕНЕРАТОР СТАТЕЙ (GEMINI)
 # ============================================
 class ArticleGenerator:
     def __init__(self):
@@ -43,7 +43,6 @@ class ArticleGenerator:
             self.model = None
     
     def generate_article(self):
-        """Генерирует SEO-статью про One•Two•Three с правильными ссылками"""
         if not self.model:
             return None, None
         
@@ -55,11 +54,9 @@ class ArticleGenerator:
             - $ONE — микро-вход — {TOKEN_DATA['prices']['ONE']}
               Сайт: {TOKEN_DATA['sites']['ONE']}
               Контракт: {TOKEN_DATA['contracts']['ONE']}
-            
             - €TWO — средний чек — {TOKEN_DATA['prices']['TWO']}
               Сайт: {TOKEN_DATA['sites']['TWO']}
               Контракт: {TOKEN_DATA['contracts']['TWO']}
-            
             - £THREE — крупные платежи — {TOKEN_DATA['prices']['THREE']}
               Сайт: {TOKEN_DATA['sites']['THREE']}
               Контракт: {TOKEN_DATA['contracts']['THREE']}
@@ -68,14 +65,14 @@ class ArticleGenerator:
             Telegram: {TOKEN_DATA['telegram']}
 
             Требования:
-            - Заголовок: кликбейтный, с ключевыми словами
+            - Заголовок: кликбейтный
             - Длина: 200-300 слов
-            - Структура: вступление, описание каждого токена, технологии, вывод
-            - В конце: ссылки на все три сайта и Telegram
+            - Структура: вступление, три токена, технологии, вывод
+            - В конце: ссылки на все три сайта
             - Язык: русский
 
             Верни в формате JSON:
-            {{"title": "Заголовок", "content": "Полный текст статьи"}}
+            {{"title": "Заголовок", "content": "Текст статьи"}}
             """
 
             response = self.model.generate_content(prompt)
@@ -108,7 +105,6 @@ class TelegraphPoster:
         self.stats = {"articles": 0, "failed": 0}
     
     def post_to_telegraph(self, title, content):
-        """Публикует статью на Telegra.ph с правильными ссылками"""
         try:
             url = "https://api.telegra.ph/createPage"
             
@@ -168,8 +164,6 @@ class BinanceSquarePoster:
             json.dump(self.stats, f, indent=2)
     
     def generate_post(self, lang="en"):
-        """Генерирует пост с правильными ссылками"""
-        
         en_posts = [
             f"""🚀 One•Two•Three ($ONE, €TWO, £THREE) — экосистема на Solana!
 
@@ -336,8 +330,7 @@ class BinanceSquarePoster:
             self.post_to_binance_square(text_en, "en")
             self.post_to_telegram(text_en, "en")
             
-            if i < posts_per_lang - 1:
-                time.sleep(300)
+            time.sleep(300)  # 5 минут
             
             text_zh = self.generate_post("zh")
             self.post_to_binance_square(text_zh, "zh")
