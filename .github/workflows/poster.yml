@@ -8,7 +8,7 @@ on:
 jobs:
   post:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 480  # 8 часов, чтобы бот точно успел
     
     steps:
       - uses: actions/checkout@v4
