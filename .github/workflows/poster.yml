@@ -1,12 +1,14 @@
 name: One•Two•Three Расклейка
 
 on:
+  schedule:
+    - cron: '0 8,20 * * *'
   workflow_dispatch:
 
 jobs:
   post:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 480  # 8 часов на выполнение
     
     steps:
       - uses: actions/checkout@v4
