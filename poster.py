@@ -4,6 +4,7 @@ import random
 import json
 import requests
 from openai import OpenAI
+import google.generativeai as genai
 
 # ============================================
 # ДАННЫЕ ТВОЕГО ТОКЕНА
@@ -28,48 +29,138 @@ TOKEN_DATA = {
 }
 
 # ============================================
-# ГЕНЕРАТОР ПОСТОВ
+# ГЕНЕРАТОР СТАТЕЙ (Gemini)
 # ============================================
-class PostGenerator:
+class ArticleGenerator:
     def __init__(self):
-        api_key = os.getenv("GROQ_API_KEY")
-        self.use_ai = bool(api_key)
-        if self.use_ai:
-            self.client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=api_key)
+        api_key = os.getenv("GEMINI_API_KEY")
+        if api_key:
+            genai.configure(api_key=api_key)
+            self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
         else:
-            self.client = None
+            self.model = None
+    
+    def generate_article(self):
+        """Генерирует SEO-статью про One•Two•Three"""
+        if not self.model:
+            return None, None
+        
+        try:
+            prompt = f"""
+            Напиши статью про крипто-токен {TOKEN_DATA['name']} на Solana.
+
+            Информация о токене:
+            - Три токена: $ONE ({TOKEN_DATA['prices']['ONE']}), €TWO ({TOKEN_DATA['prices']['TWO']}), £THREE ({TOKEN_DATA['prices']['THREE']})
+            - Сеть: Solana (мгновенные транзакции, комиссия < $0.001)
+            - Адреса контрактов:
+              $ONE: {TOKEN_DATA['contracts']['ONE']}
+              €TWO: {TOKEN_DATA['contracts']['TWO']}
+              £THREE: {TOKEN_DATA['contracts']['THREE']}
+            - Сайт: {TOKEN_DATA['links']['website']}
+            - Telegram: {TOKEN_DATA['links']['telegram']}
+
+            Требования:
+            - Заголовок: кликбейтный, с ключевыми словами
+            - Длина: 200-300 слов
+            - Структура: вступление, описание токенов, технологии, вывод
+            - Используй эмодзи и маркированные списки
+            - Язык: русский
+            - В конце: ссылка на сайт и призыв к действию
+
+            Верни в формате JSON:
+            {{"title": "Заголовок", "content": "Полный текст статьи"}}
+            """
+
+            response = self.model.generate_content(prompt)
+            result = response.text.strip()
+            
+            # Парсим JSON
+            try:
+                if result.startswith('{'):
+                    data = json.loads(result)
+                    return data.get('title'), data.get('content')
+                else:
+                    lines = result.split('\n')
+                    title = lines[0].strip('# ').strip()
+                    content = '\n'.join(lines[1:])
+                    return title, content
+            except:
+                lines = result.split('\n')
+                title = lines[0].strip('# ').strip()
+                content = '\n'.join(lines[1:])
+                return title, content
+
+        except Exception as e:
+            print(f"⚠️ Ошибка Gemini: {e}")
+            return None, None
+
+# ============================================
+# ПОСТЕР НА TELEGRAPH
+# ============================================
+class TelegraphPoster:
+    def __init__(self):
+        self.stats = {"articles": 0, "failed": 0}
+    
+    def post_to_telegraph(self, title, content):
+        """Публикует статью на Telegra.ph"""
+        try:
+            url = "https://api.telegra.ph/createPage"
+            
+            # Форматируем контент для Telegraph (HTML)
+            content_html = content.replace('\n', '<br>')
+            
+            # Добавляем ссылку на сайт в конце
+            content_html += f'<br><br>🌐 <a href="{TOKEN_DATA["links"]["website"]}">{TOKEN_DATA["links"]["website"]}</a><br>📱 <a href="{TOKEN_DATA["links"]["telegram"]}">{TOKEN_DATA["links"]["telegram"]}</a>'
+            
+            data = {
+                "title": title,
+                "content": content_html,
+                "author_name": "One•Two•Three",
+                "author_url": TOKEN_DATA["links"]["website"]
+            }
+            
+            response = requests.post(url, json=data, timeout=30)
+            result = response.json()
+            
+            if result.get('ok'):
+                article_url = result['result']['url']
+                print(f"✅ Telegra.ph — статья опубликована: {article_url}")
+                self.stats["articles"] += 1
+                return article_url
+            else:
+                print(f"⚠️ Ошибка Telegra.ph: {result}")
+                self.stats["failed"] += 1
+                return None
+                
+        except Exception as e:
+            print(f"⚠️ Ошибка Telegra.ph: {e}")
+            self.stats["failed"] += 1
+            return None
+
+# ============================================
+# ПОСТЕР НА BINANCE SQUARE
+# ============================================
+class BinanceSquarePoster:
+    def __init__(self):
+        self.api_key = os.getenv("BINANCE_SQUARE_API_KEY")
+        self.stats = {"posted": 0, "failed": 0, "platforms": {}}
+        self.load_stats()
+    
+    def load_stats(self):
+        try:
+            with open("stats.json", "r") as f:
+                self.stats = json.load(f)
+        except:
+            pass
+    
+    def save_stats(self):
+        with open("stats.json", "w") as f:
+            json.dump(self.stats, f, indent=2)
     
     def generate_post(self, lang="en"):
-        """Генерирует 1 уникальный пост на указанном языке"""
-        
-        if self.use_ai and self.client:
-            try:
-                lang_name = {"en": "English", "zh": "Chinese (Simplified)"}[lang]
-                system_prompt = f"You are a crypto marketer. Generate 1 unique promotional post for One•Two•Three tokens on Solana. Write in {lang_name}. 100-200 words. Include prices, features, and call to action. Use emojis and hashtags."
-                
-                response = self.client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[{
-                        "role": "system",
-                        "content": system_prompt
-                    }, {
-                        "role": "user",
-                        "content": f"Token: One•Two•Three ($ONE, €TWO, £THREE). Prices: $ONE={TOKEN_DATA['prices']['ONE']}, €TWO={TOKEN_DATA['prices']['TWO']}, £THREE={TOKEN_DATA['prices']['THREE']}. Website: {TOKEN_DATA['links']['website']}"
-                    }],
-                    temperature=0.9,
-                    max_tokens=500
-                )
-                post = response.choices[0].message.content.strip()
-                if len(post) > 50:
-                    return post
-                else:
-                    raise Exception("Post too short")
-                    
-            except Exception as e:
-                print(f"⚠️ Ошибка AI ({lang}): {e}")
-        
-        # Fallback: базовые шаблоны, если AI не сработал
-        templates_en = [
+        """Генерирует пост для Binance Square"""
+        # Посты на английском
+        en_posts = [
             f"""🚀 One•Two•Three ($ONE, €TWO, £THREE) — the first progressive fintech ecosystem on Solana!
 
 Three tokens. Three currencies. Three price levels. One wallet.
@@ -99,26 +190,11 @@ Three tokens. Three currencies. Three price levels. One wallet.
 🚀 Start using today: {TOKEN_DATA['links']['website']}
 💬 Join community: @onetwothree
 
-#ONE #TWO #THREE #Solana #Payments #Crypto #Web3""",
-
-            f"""🔥 One•Two•Three is changing the game on Solana!
-
-3 Tokens, 3 Currencies, 3 Price Levels — 1 Wallet.
-
-✅ $ONE ({TOKEN_DATA['prices']['ONE']}) — Micro-payments
-✅ €TWO ({TOKEN_DATA['prices']['TWO']}) — Daily spending  
-✅ £THREE ({TOKEN_DATA['prices']['THREE']}) — Big purchases
-
-🔗 Powered by Solana (65k TPS, fee < $0.001)
-🛡️ Audited | LP locked 365 days
-
-📲 Try it now: {TOKEN_DATA['links']['website']}
-💬 Chat: @onetwothree
-
-#ONE #TWO #THREE #Solana #DeFi #Crypto #MicroPayments"""
+#ONE #TWO #THREE #Solana #Payments #Crypto #Web3"""
         ]
         
-        templates_zh = [
+        # Посты на китайском
+        zh_posts = [
             f"""🚀 One•Two•Three ($ONE, €TWO, £THREE) — Solana 上首个金融科技生态系统！
 
 三种代币。三种货币。三个价格层级。一个钱包。
@@ -148,49 +224,13 @@ Three tokens. Three currencies. Three price levels. One wallet.
 🚀 立即使用: {TOKEN_DATA['links']['website']}
 💬 加入社区: @onetwothree
 
-#ONE #TWO #THREE #Solana #支付 #加密货币 #Web3""",
-
-            f"""🔥 One•Two•Three 正在改变 Solana 上的支付方式！
-
-3种代币，3种货币，3个价格层级 — 1个钱包。
-
-✅ $ONE ({TOKEN_DATA['prices']['ONE']}) — 微支付
-✅ €TWO ({TOKEN_DATA['prices']['TWO']}) — 日常消费
-✅ £THREE ({TOKEN_DATA['prices']['THREE']}) — 大额支付
-
-🔗 基于 Solana (65k TPS, 手续费 < $0.001)
-🛡️ 已审计 | LP锁定365天
-
-📲 立即体验: {TOKEN_DATA['links']['website']}
-💬 聊天: @onetwothree
-
-#ONE #TWO #THREE #Solana #DeFi #加密货币 #微支付"""
+#ONE #TWO #THREE #Solana #支付 #加密货币 #Web3"""
         ]
         
         if lang == "en":
-            return random.choice(templates_en)
+            return random.choice(en_posts)
         else:
-            return random.choice(templates_zh)
-
-# ============================================
-# ПОСТЕР НА BINANCE SQUARE
-# ============================================
-class BinanceSquarePoster:
-    def __init__(self):
-        self.api_key = os.getenv("BINANCE_SQUARE_API_KEY")
-        self.stats = {"posted": 0, "failed": 0, "platforms": {}}
-        self.load_stats()
-    
-    def load_stats(self):
-        try:
-            with open("stats.json", "r") as f:
-                self.stats = json.load(f)
-        except:
-            pass
-    
-    def save_stats(self):
-        with open("stats.json", "w") as f:
-            json.dump(self.stats, f, indent=2)
+            return random.choice(zh_posts)
     
     def post_to_binance_square(self, text, lang="en"):
         if not self.api_key:
@@ -276,37 +316,25 @@ class BinanceSquarePoster:
                 print(f"⚠️ Ошибка отчета: {e}")
     
     def run(self, posts_per_lang=3):
-        """Запуск: 3 EN + 3 ZH = 6 постов за цикл"""
-        print("🚀 One•Two•Three Расклейщик запущен!")
-        print(f"🌐 Языки: English 🇬🇧 + 中文 🇨🇳")
-        print(f"📊 Постов за запуск: {posts_per_lang} EN + {posts_per_lang} ZH = {posts_per_lang * 2}")
-        print(f"⏰ Пауза между постами: 1-2 часа")
-        print("=" * 60)
+        """Запуск Binance Square"""
+        print("📢 Постим в Binance Square...")
         
-        generator = PostGenerator()
-        
-        # Создаем список постов: чередуем языки
-        posts = []
         for i in range(posts_per_lang):
-            posts.append({"lang": "en", "text": generator.generate_post("en")})
-            posts.append({"lang": "zh", "text": generator.generate_post("zh")})
-        
-        # Перемешиваем, чтобы посты чередовались еще сильнее
-        random.shuffle(posts)
-        
-        for i, post_data in enumerate(posts):
-            lang_name = {"en": "English 🇬🇧", "zh": "中文 🇨🇳"}[post_data["lang"]]
-            print(f"\n📝 Пост {i+1}/{len(posts)} ({lang_name})")
-            print(f"  📌 {post_data['text'][:80]}...")
+            # Пост на английском
+            text_en = self.generate_post("en")
+            self.post_to_binance_square(text_en, "en")
+            self.post_to_telegram(text_en, "en")
             
-            # Публикуем в Binance Square
-            self.post_to_binance_square(post_data["text"], post_data["lang"])
+            # Пауза 5 минут между постами
+            if i < posts_per_lang - 1:
+                time.sleep(300)
             
-            # Дублируем в Telegram
-            self.post_to_telegram(post_data["text"], post_data["lang"])
+            # Пост на китайском
+            text_zh = self.generate_post("zh")
+            self.post_to_binance_square(text_zh, "zh")
+            self.post_to_telegram(text_zh, "zh")
             
-            # ⏰ ПАУЗА 1-2 ЧАСА (между постами)
-            if i < len(posts) - 1:
+            if i < posts_per_lang - 1:
                 wait_time = random.randint(3600, 7200)  # 1-2 часа
                 wait_hours = wait_time // 3600
                 wait_minutes = (wait_time % 3600) // 60
@@ -314,12 +342,56 @@ class BinanceSquarePoster:
                 time.sleep(wait_time)
         
         self.save_stats()
-        self.send_report()
-        print("\n✅ Цикл завершен!")
+
+# ============================================
+# ОСНОВНОЙ БОТ
+# ============================================
+class MainBot:
+    def __init__(self):
+        self.binance = BinanceSquarePoster()
+        self.telegraph = TelegraphPoster()
+        self.article_gen = ArticleGenerator()
+    
+    def run(self):
+        print("🚀 One•Two•Three Расклейщик запущен!")
+        print("🌐 Площадки: Binance Square + Telegra.ph + Telegram")
+        print("=" * 60)
+        
+        # 1. Генерируем и публикуем статью в Telegraph
+        print("\n📝 Генерируем SEO-статью через Gemini...")
+        title, content = self.article_gen.generate_article()
+        
+        if title and content:
+            print(f"📌 Заголовок: {title}")
+            print(f"📄 Контент: {len(content)} символов")
+            
+            # Публикуем в Telegraph
+            article_url = self.telegraph.post_to_telegraph(title, content)
+            
+            if article_url:
+                # Отправляем ссылку в Telegram
+                self.binance.post_to_telegram(
+                    f"📝 **Новая статья про One•Two•Three**\n\n{title}\n\n🔗 Читать: {article_url}",
+                    lang="ru"
+                )
+                print(f"✅ Статья опубликована: {article_url}")
+            else:
+                print("⚠️ Не удалось опубликовать статью")
+        else:
+            print("⚠️ Не удалось сгенерировать статью")
+        
+        # 2. Постим в Binance Square
+        print("\n📢 Постим в Binance Square...")
+        self.binance.run(posts_per_lang=3)
+        
+        # 3. Отчет
+        self.binance.send_report()
+        
+        print("\n✅ Все циклы завершены!")
 
 # ============================================
 # ЗАПУСК
 # ============================================
 if __name__ == "__main__":
-    poster = BinanceSquarePoster()
-    poster.run(posts_per_lang=3)
+    bot = MainBot()
+    bot.run()
