@@ -8,13 +8,13 @@ on:
 jobs:
   post:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # ← УМЕНЬШИЛ ДО 15 МИНУТ
+    timeout-minutes: 10
     
     steps:
       - uses: actions/checkout@v4
       
       - name: Установка Python
-        uses: actions/setup-python@v5  # ← ОБНОВИЛ ДО v5
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       
@@ -23,13 +23,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y chromium-browser chromium-chromedriver
           pip install --upgrade pip
-          pip install selenium requests openai google-genai
+          pip install selenium requests
       
       - name: Запуск расклейки
         env:
           BINANCE_SQUARE_API_KEY: ${{ secrets.BINANCE_SQUARE_API_KEY }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT: ${{ secrets.TELEGRAM_CHAT }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python poster.py
