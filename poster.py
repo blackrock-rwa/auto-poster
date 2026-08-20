@@ -4,6 +4,7 @@ import random
 import json
 import requests
 import hashlib
+import subprocess
 from openai import OpenAI
 import google.generativeai as genai
 from selenium import webdriver
@@ -37,7 +38,7 @@ TOKEN_DATA = {
 }
 
 # ============================================
-# 1. BINANCE SQUARE (УЖЕ РАБОТАЕТ)
+# 1. BINANCE SQUARE
 # ============================================
 class BinanceSquarePoster:
     def __init__(self):
@@ -164,7 +165,7 @@ class BinanceSquarePoster:
         self.save_stats()
 
 # ============================================
-# 2. TELEGRAPH (СТАТЬИ)
+# 2. TELEGRAPH
 # ============================================
 class TelegraphPoster:
     def __init__(self):
@@ -199,7 +200,7 @@ class TelegraphPoster:
             return None
 
 # ============================================
-# 3. TELEGRAM ADS BOT (СВОЯ ДОСКА В ТЕЛЕГРАМ)
+# 3. TELEGRAM ADS BOT
 # ============================================
 class TelegramAdsBotPoster:
     def __init__(self):
@@ -238,7 +239,7 @@ class TelegramAdsBotPoster:
             return False
     
     def run(self):
-        print("📢 Постим в Telegram Ads Bot (свой канал)...")
+        print("📢 Постим в Telegram Ads Bot...")
         text = f"""🚀 **One•Two•Three — экосистема на Solana!**
 
 Три токена. Три уровня. Один кошелёк.
@@ -267,8 +268,6 @@ class AibtcNewsPoster:
     
     def post_to_aibtc(self, text):
         try:
-            # CLI-команда через subprocess
-            import subprocess
             result = subprocess.run([
                 "bun", "run", "aibtc-news-classifieds/aibtc-news-classifieds.ts", "post-classified",
                 "--title", "One•Two•Three — Solana Ecosystem",
@@ -306,7 +305,7 @@ TG: @onetwothree
         self.post_to_aibtc(text)
 
 # ============================================
-# 5. RUDOS.SU (БЕЗ РЕГИСТРАЦИИ)
+# 5. RUDOS.SU
 # ============================================
 class RudosPoster:
     def __init__(self):
@@ -328,24 +327,16 @@ class RudosPoster:
             print("📤 RuDos.su...")
             driver.get("https://rudos.su/add")
             time.sleep(5)
-            
             wait = WebDriverWait(driver, 15)
-            
-            # Заголовок
             title_field = wait.until(EC.presence_of_element_located((By.NAME, "title")))
             title_field.send_keys("One•Two•Three — экосистема на Solana")
             time.sleep(1)
-            
-            # Описание
             desc_field = driver.find_element(By.NAME, "description")
             desc_field.send_keys(text)
             time.sleep(1)
-            
-            # Публикация
             publish_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Опубликовать')]")
             publish_btn.click()
             time.sleep(5)
-            
             print(f"✅ RuDos.su — опубликовано!")
             self.stats["posted"] += 1
             driver.quit()
@@ -379,7 +370,7 @@ class RudosPoster:
         self.post_to_rudos(text)
 
 # ============================================
-# 6. XMRBAZAAR (ЧЕРЕЗ SELENIUM)
+# 6. XMRBAZAAR
 # ============================================
 class XmrBazaarPoster:
     def __init__(self):
@@ -401,29 +392,19 @@ class XmrBazaarPoster:
             print("📤 XmrBazaar...")
             driver.get("https://xmrbazaar.com/board/create")
             time.sleep(5)
-            
             wait = WebDriverWait(driver, 15)
-            
-            # Заголовок
             title_field = wait.until(EC.presence_of_element_located((By.NAME, "title")))
             title_field.send_keys("One•Two•Three — Solana Ecosystem")
             time.sleep(1)
-            
-            # Описание
             desc_field = driver.find_element(By.NAME, "description")
             desc_field.send_keys(text)
             time.sleep(1)
-            
-            # Категория
             category = driver.find_element(By.NAME, "category")
             category.send_keys("Cryptocurrency")
             time.sleep(1)
-            
-            # Публикация
             publish_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Post')]")
             publish_btn.click()
             time.sleep(5)
-            
             print(f"✅ XmrBazaar — опубликовано!")
             self.stats["posted"] += 1
             driver.quit()
@@ -457,7 +438,141 @@ Three tokens. Three currencies. Three price levels. One wallet.
         self.post_to_xmrbazaar(text)
 
 # ============================================
-# 7. ОСНОВНОЙ БОТ (ВСЕ ПЛОЩАДКИ)
+# 7. BAIXING (百姓网) — НОВАЯ ПЛОЩАДКА
+# ============================================
+class BaixingPoster:
+    def __init__(self):
+        self.stats = {"posted": 0, "failed": 0}
+    
+    def post_to_baixing(self, text):
+        try:
+            result = subprocess.run([
+                "baixing", "post",
+                "-t", "One•Two•Three токен на Solana",
+                "-c", text[:200],
+                "--category", "crypto"
+            ], capture_output=True, text=True, timeout=60)
+            if result.returncode == 0:
+                print(f"✅ Baixing — опубликовано!")
+                self.stats["posted"] += 1
+                return True
+            else:
+                print(f"⚠️ Ошибка Baixing: {result.stderr}")
+                self.stats["failed"] += 1
+                return False
+        except Exception as e:
+            print(f"⚠️ Ошибка Baixing: {e}")
+            self.stats["failed"] += 1
+            return False
+    
+    def run(self):
+        print("📢 Постим в Baixing (китайская доска)...")
+        text = f"""One•Two•Three ($ONE, €TWO, £THREE) — экосистема на Solana.
+Три токена: $ONE={TOKEN_DATA['prices']['ONE']}, €TWO={TOKEN_DATA['prices']['TWO']}, £THREE={TOKEN_DATA['prices']['THREE']}
+Сайты: {TOKEN_DATA['sites']['ONE']}, {TOKEN_DATA['sites']['TWO']}, {TOKEN_DATA['sites']['THREE']}"""
+        self.post_to_baixing(text)
+
+# ============================================
+# 8. YEETIT — НОВАЯ ПЛОЩАДКА
+# ============================================
+class YeetItPoster:
+    def __init__(self):
+        self.stats = {"posted": 0, "failed": 0}
+    
+    def post_to_yeetit(self, html_content):
+        try:
+            response = requests.post(
+                "https://yeetit.site/v1/publish",
+                json={"html": html_content},
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
+            if response.status_code == 200:
+                url = response.json().get('url')
+                print(f"✅ YeetIt — опубликовано! URL: {url}")
+                self.stats["posted"] += 1
+                return True
+            else:
+                print(f"⚠️ Ошибка YeetIt: {response.text}")
+                self.stats["failed"] += 1
+                return False
+        except Exception as e:
+            print(f"⚠️ Ошибка YeetIt: {e}")
+            self.stats["failed"] += 1
+            return False
+    
+    def run(self):
+        print("📢 Постим в YeetIt...")
+        html = f"""
+        <html>
+        <head><title>One•Two•Three</title></head>
+        <body>
+            <h1>🚀 One•Two•Three — экосистема на Solana</h1>
+            <h3>Три токена. Три валюты. Три ценовых уровня.</h3>
+            <ul>
+                <li><b>$ONE</b> — микро-вход — {TOKEN_DATA['prices']['ONE']} — <a href="{TOKEN_DATA['sites']['ONE']}">Сайт</a></li>
+                <li><b>€TWO</b> — средний чек — {TOKEN_DATA['prices']['TWO']} — <a href="{TOKEN_DATA['sites']['TWO']}">Сайт</a></li>
+                <li><b>£THREE</b> — крупные платежи — {TOKEN_DATA['prices']['THREE']} — <a href="{TOKEN_DATA['sites']['THREE']}">Сайт</a></li>
+            </ul>
+            <p>⚡ Solana: мгновенные транзакции, комиссия &lt; $0.001</p>
+            <p>📱 TG: <a href="{TOKEN_DATA['telegram']}">@onetwothree</a></p>
+        </body>
+        </html>
+        """
+        self.post_to_yeetit(html)
+
+# ============================================
+# 9. CURB.SALE — НОВАЯ ПЛОЩАДКА
+# ============================================
+class CurbSalePoster:
+    def __init__(self):
+        self.stats = {"posted": 0, "failed": 0}
+    
+    def post_to_curb(self, title, price, description):
+        try:
+            response = requests.post(
+                "https://api.curb.sale/listings",
+                json={
+                    "title": title,
+                    "price": price,
+                    "description": description,
+                    "currency": "USD"
+                },
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
+            if response.status_code == 201 or response.status_code == 200:
+                print(f"✅ Curb.Sale — опубликовано!")
+                self.stats["posted"] += 1
+                return True
+            else:
+                print(f"⚠️ Ошибка Curb.Sale: {response.text}")
+                self.stats["failed"] += 1
+                return False
+        except Exception as e:
+            print(f"⚠️ Ошибка Curb.Sale: {e}")
+            self.stats["failed"] += 1
+            return False
+    
+    def run(self):
+        print("📢 Постим в Curb.Sale...")
+        self.post_to_curb(
+            title="One•Two•Three — Solana Ecosystem",
+            price="0.01",
+            description=f"""One•Two•Three ($ONE, €TWO, £THREE) — the first progressive fintech ecosystem on Solana.
+
+Prices: $ONE={TOKEN_DATA['prices']['ONE']}, €TWO={TOKEN_DATA['prices']['TWO']}, £THREE={TOKEN_DATA['prices']['THREE']}
+
+Websites:
+$ONE: {TOKEN_DATA['sites']['ONE']}
+€TWO: {TOKEN_DATA['sites']['TWO']}
+£THREE: {TOKEN_DATA['sites']['THREE']}
+
+TG: @onetwothree"""
+        )
+
+# ============================================
+# 10. ОСНОВНОЙ БОТ (ВСЕ ПЛОЩАДКИ)
 # ============================================
 class MainBot:
     def __init__(self):
@@ -467,6 +582,9 @@ class MainBot:
         self.aibtc = AibtcNewsPoster()
         self.rudos = RudosPoster()
         self.xmrbazaar = XmrBazaarPoster()
+        self.baixing = BaixingPoster()
+        self.yeetit = YeetItPoster()
+        self.curb = CurbSalePoster()
         self.setup_gemini()
     
     def setup_gemini(self):
@@ -515,10 +633,10 @@ class MainBot:
     
     def run(self):
         print("🚀 One•Two•Three Расклейщик запущен!")
-        print("🌐 Площадки: Binance Square + Telegraph + Telegram Ads Bot + aibtc.news + RuDos.su + XmrBazaar")
+        print("🌐 Площадки: Binance Square + Telegraph + Telegram Ads Bot + aibtc.news + RuDos.su + XmrBazaar + Baixing + YeetIt + Curb.Sale")
         print("=" * 60)
         
-        # 1. Telegraph (статья)
+        # 1. Telegraph
         print("\n📝 Генерируем статью для Telegraph...")
         title, content = self.generate_article()
         if title and content:
@@ -530,11 +648,11 @@ class MainBot:
         print("\n📢 Постим в Binance Square...")
         self.binance.run(posts_per_lang=3)
         
-        # 3. Telegram Ads Bot (свой канал)
+        # 3. Telegram Ads Bot
         print("\n📢 Постим в Telegram Ads Bot...")
         self.telegram_ads.run()
         
-        # 4. aibtc.news Classifieds
+        # 4. aibtc.news
         print("\n📢 Постим в aibtc.news...")
         self.aibtc.run()
         
@@ -546,13 +664,22 @@ class MainBot:
         print("\n📢 Постим в XmrBazaar...")
         self.xmrbazaar.run()
         
-        # 7. Финальный отчет
+        # 7. Baixing
+        print("\n📢 Постим в Baixing...")
+        self.baixing.run()
+        
+        # 8. YeetIt
+        print("\n📢 Постим в YeetIt...")
+        self.yeetit.run()
+        
+        # 9. Curb.Sale
+        print("\n📢 Постим в Curb.Sale...")
+        self.curb.run()
+        
+        # Финальный отчет
         self.post_to_telegram("✅ **Все циклы завершены!**")
         print("\n✅ Все циклы завершены!")
 
-# ============================================
-# ЗАПУСК
-# ============================================
 if __name__ == "__main__":
     bot = MainBot()
     bot.run()
