@@ -1,6 +1,5 @@
 import os
 import time
-import random
 import json
 import requests
 from selenium import webdriver
@@ -34,6 +33,22 @@ TOKEN_DATA = {
 }
 
 # ============================================
+# УТИЛИТЫ
+# ============================================
+def post_to_telegram(text):
+    bot_token = os.getenv("TELEGRAM_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT")
+    if bot_token and chat_id:
+        try:
+            requests.post(
+                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
+                timeout=10
+            )
+        except Exception as e:
+            print(f"⚠️ Telegram: {e}")
+
+# ============================================
 # 1. BINANCE SQUARE
 # ============================================
 class BinanceSquarePoster:
@@ -44,22 +59,28 @@ class BinanceSquarePoster:
     def post(self, text, lang="en"):
         if not self.api_key:
             print("⚠️ BINANCE_SQUARE_API_KEY не найден!")
+            self.stats["failed"] += 1
             return False
         try:
             url = "https://api.binance.com/sapi/v1/square/post"
             headers = {"X-MBX-APIKEY": self.api_key, "Content-Type": "application/json"}
-            payload = {"text": text, "topic": "cryptocurrency", "lang": lang, "tags": ["ONE", "TWO", "THREE", "Solana"]}
+            payload = {
+                "text": text[:2000],
+                "topic": "cryptocurrency",
+                "lang": lang,
+                "tags": ["ONE", "TWO", "THREE", "Solana", "DeFi"]
+            }
             response = requests.post(url, headers=headers, json=payload, timeout=10)
             if response.status_code == 200:
                 print(f"✅ Binance Square ({lang})")
                 self.stats["posted"] += 1
                 return True
             else:
-                print(f"⚠️ Binance Square: {response.text}")
+                print(f"⚠️ Binance Square ({lang}): {response.text[:100]}")
                 self.stats["failed"] += 1
                 return False
         except Exception as e:
-            print(f"⚠️ Binance Square: {e}")
+            print(f"⚠️ Binance Square ({lang}): {e}")
             self.stats["failed"] += 1
             return False
 
@@ -86,14 +107,19 @@ class RudosPoster:
             print("📤 RuDos.su...")
             driver.get("https://rudos.su/add")
             time.sleep(2)
-            wait = WebDriverWait(driver, 10)
-            title_field = wait.until(EC.presence_of_element_located((By.NAME, "title")))
+            
+            title_field = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.NAME, "title"))
+            )
             title_field.send_keys("One•Two•Three — экосистема на Solana")
+            
             desc_field = driver.find_element(By.NAME, "description")
-            desc_field.send_keys(text)
+            desc_field.send_keys(text[:4000])
+            
             publish_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Опубликовать')]")
             publish_btn.click()
             time.sleep(2)
+            
             print("✅ RuDos.su")
             self.stats["posted"] += 1
             driver.quit()
@@ -127,14 +153,19 @@ class XmrBazaarPoster:
             print("📤 XmrBazaar...")
             driver.get("https://xmrbazaar.com/board/create")
             time.sleep(2)
-            wait = WebDriverWait(driver, 10)
-            title_field = wait.until(EC.presence_of_element_located((By.NAME, "title")))
+            
+            title_field = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.NAME, "title"))
+            )
             title_field.send_keys("One•Two•Three — Solana Ecosystem")
+            
             desc_field = driver.find_element(By.NAME, "description")
-            desc_field.send_keys(text)
+            desc_field.send_keys(text[:4000])
+            
             publish_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Post')]")
             publish_btn.click()
             time.sleep(2)
+            
             print("✅ XmrBazaar")
             self.stats["posted"] += 1
             driver.quit()
@@ -175,9 +206,11 @@ class TelegraphPoster:
                 print(f"✅ Telegra.ph: {url}")
                 self.stats["articles"] += 1
                 return url
+            self.stats["failed"] += 1
             return None
         except Exception as e:
             print(f"⚠️ Telegraph: {e}")
+            self.stats["failed"] += 1
             return None
 
 # ============================================
@@ -189,18 +222,17 @@ class YeetItPoster:
     
     def post(self):
         try:
-            html = f"""
-            <html><head><title>One•Two•Three</title></head><body>
+            html = f"""<html><head><title>One•Two•Three</title></head><body>
             <h1>🚀 One•Two•Three — Solana</h1>
             <b>$ONE</b> {TOKEN_DATA['prices']['ONE']} — <a href="{TOKEN_DATA['sites']['ONE']}">Сайт</a><br>
             <b>€TWO</b> {TOKEN_DATA['prices']['TWO']} — <a href="{TOKEN_DATA['sites']['TWO']}">Сайт</a><br>
             <b>£THREE</b> {TOKEN_DATA['prices']['THREE']} — <a href="{TOKEN_DATA['sites']['THREE']}">Сайт</a><br>
             📱 TG: <a href="{TOKEN_DATA['telegram']}">@onetwothree</a>
-            </body></html>
-            """
+            </body></html>"""
             response = requests.post("https://yeetit.site/v1/publish", json={"html": html}, timeout=10)
             if response.status_code == 200:
-                print(f"✅ YeetIt: {response.json().get('url')}")
+                url = response.json().get('url')
+                print(f"✅ YeetIt: {url}")
                 self.stats["posted"] += 1
                 return True
             self.stats["failed"] += 1
@@ -222,7 +254,7 @@ class CurbSalePoster:
             response = requests.post("https://api.curb.sale/listings", json={
                 "title": "One•Two•Three — Solana Ecosystem",
                 "price": "0.01",
-                "description": f"Three tokens: $ONE {TOKEN_DATA['prices']['ONE']}, €TWO {TOKEN_DATA['prices']['TWO']}, £THREE {TOKEN_DATA['prices']['THREE']}",
+                "description": f"Three tokens: $ONE {TOKEN_DATA['prices']['ONE']}, €TWO {TOKEN_DATA['prices']['TWO']}, £THREE {TOKEN_DATA['prices']['THREE']}. TG: @onetwothree",
                 "currency": "USD"
             }, timeout=10)
             if response.status_code in [200, 201]:
@@ -237,74 +269,54 @@ class CurbSalePoster:
             return False
 
 # ============================================
-# ОСНОВНОЙ БОТ
+# ГЛАВНАЯ ФУНКЦИЯ
 # ============================================
-def post_to_telegram(text):
-    bot_token = os.getenv("TELEGRAM_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT")
-    if bot_token and chat_id:
-        try:
-            requests.post(f"https://api.telegram.org/bot{bot_token}/sendMessage", 
-                         json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}, timeout=10)
-        except:
-            pass
-
 def main():
     print("🚀 One•Two•Three Расклейщик запущен!")
     print("🌐 Площадки: Binance Square + RuDos.su + XmrBazaar + Telegraph + YeetIt + Curb.Sale")
     print("=" * 50)
     
+    # Готовим тексты
+    text_ru = f"""One•Two•Three ($ONE, €TWO, £THREE) — экосистема на Solana.
+
+$ONE {TOKEN_DATA['prices']['ONE']}: {TOKEN_DATA['sites']['ONE']}
+€TWO {TOKEN_DATA['prices']['TWO']}: {TOKEN_DATA['sites']['TWO']}
+£THREE {TOKEN_DATA['prices']['THREE']}: {TOKEN_DATA['sites']['THREE']}
+
+⚡ Solana: мгновенные транзакции, комиссия < $0.001
+📱 TG: @onetwothree"""
+    
+    text_en = f"""One•Two•Three ($ONE, €TWO, £THREE) — Solana ecosystem.
+
+$ONE {TOKEN_DATA['prices']['ONE']}: {TOKEN_DATA['sites']['ONE']}
+€TWO {TOKEN_DATA['prices']['TWO']}: {TOKEN_DATA['sites']['TWO']}
+£THREE {TOKEN_DATA['prices']['THREE']}: {TOKEN_DATA['sites']['THREE']}
+
+⚡ Solana: instant txs, fee < $0.001
+📱 TG: @onetwothree"""
+    
     # 1. Telegraph
     print("\n📝 Telegraph...")
     telegraph = TelegraphPoster()
-    url = telegraph.post("One•Two•Three на Solana", 
-        f"""One•Two•Three ($ONE, €TWO, £THREE) — экосистема на Solana.
-
-Три токена: $ONE {TOKEN_DATA['prices']['ONE']}, €TWO {TOKEN_DATA['prices']['TWO']}, £THREE {TOKEN_DATA['prices']['THREE']}
-
-Сайты:
-{TOKEN_DATA['sites']['ONE']}
-{TOKEN_DATA['sites']['TWO']}
-{TOKEN_DATA['sites']['THREE']}
-
-TG: @onetwothree""")
+    url = telegraph.post("One•Two•Three на Solana", text_ru)
     if url:
         post_to_telegram(f"📝 Статья: {url}")
     
     # 2. Binance Square
     print("\n📢 Binance Square...")
     binance = BinanceSquarePoster()
-    text = f"""🚀 One•Two•Three ($ONE, €TWO, £THREE) — экосистема на Solana!
-
-$ONE {TOKEN_DATA['prices']['ONE']}: {TOKEN_DATA['sites']['ONE']}
-€TWO {TOKEN_DATA['prices']['TWO']}: {TOKEN_DATA['sites']['TWO']}
-£THREE {TOKEN_DATA['prices']['THREE']}: {TOKEN_DATA['sites']['THREE']}
-
-⚡ Solana, TG: @onetwothree #ONE #TWO #THREE #Solana"""
-    binance.post(text, "en")
-    binance.post(text, "zh")
+    binance.post(text_ru, "en")
+    binance.post(text_ru, "zh")
     
     # 3. RuDos.su
     print("\n📢 RuDos.su...")
     rudos = RudosPoster()
-    rudos.post(f"""One•Two•Three ($ONE, €TWO, £THREE) — экосистема на Solana.
-
-$ONE {TOKEN_DATA['prices']['ONE']}: {TOKEN_DATA['sites']['ONE']}
-€TWO {TOKEN_DATA['prices']['TWO']}: {TOKEN_DATA['sites']['TWO']}
-£THREE {TOKEN_DATA['prices']['THREE']}: {TOKEN_DATA['sites']['THREE']}
-
-TG: @onetwothree""")
+    rudos.post(text_ru)
     
     # 4. XmrBazaar
     print("\n📢 XmrBazaar...")
     xmr = XmrBazaarPoster()
-    xmr.post(f"""One•Two•Three ($ONE, €TWO, £THREE) — Solana ecosystem.
-
-$ONE {TOKEN_DATA['prices']['ONE']}: {TOKEN_DATA['sites']['ONE']}
-€TWO {TOKEN_DATA['prices']['TWO']}: {TOKEN_DATA['sites']['TWO']}
-£THREE {TOKEN_DATA['prices']['THREE']}: {TOKEN_DATA['sites']['THREE']}
-
-TG: @onetwothree""")
+    xmr.post(text_en)
     
     # 5. YeetIt
     print("\n📢 YeetIt...")
@@ -316,7 +328,7 @@ TG: @onetwothree""")
     curb = CurbSalePoster()
     curb.post()
     
-    # Отчет
+    # Итог
     total = binance.stats['posted'] + rudos.stats['posted'] + xmr.stats['posted'] + yeetit.stats['posted'] + curb.stats['posted']
     post_to_telegram(f"✅ **Готово! Постов: {total}**")
     print(f"\n✅ Готово! Постов: {total}")
