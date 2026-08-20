@@ -18,12 +18,18 @@ jobs:
         with:
           python-version: '3.10'
       
+      - name: Установка Node.js (для Baixing)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
       - name: Установка зависимостей
         run: |
           sudo apt-get update
           sudo apt-get install -y chromium-browser chromium-chromedriver
           pip install --upgrade pip
           pip install selenium requests openai google-generativeai
+          npm install -g baixing-agent-cli
       
       - name: Запуск расклейки
         env:
