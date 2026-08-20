@@ -8,7 +8,7 @@ on:
 jobs:
   post:
     runs-on: ubuntu-latest
-    timeout-minutes: 480  # 8 часов, чтобы бот точно успел
+    timeout-minutes: 480
     
     steps:
       - uses: actions/checkout@v4
@@ -20,8 +20,10 @@ jobs:
       
       - name: Установка зависимостей
         run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser chromium-chromedriver
           pip install --upgrade pip
-          pip install requests openai google-generativeai
+          pip install selenium requests openai google-generativeai
       
       - name: Запуск расклейки
         env:
@@ -30,5 +32,8 @@ jobs:
           TELEGRAM_CHAT: ${{ secrets.TELEGRAM_CHAT }}
           BINANCE_SQUARE_API_KEY: ${{ secrets.BINANCE_SQUARE_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_ADS_BOT_TOKEN: ${{ secrets.TELEGRAM_ADS_BOT_TOKEN }}
+          TELEGRAM_ADS_CHANNEL: ${{ secrets.TELEGRAM_ADS_CHANNEL }}
+          BTC_ADDRESS: ${{ secrets.BTC_ADDRESS }}
         run: |
           python poster.py
