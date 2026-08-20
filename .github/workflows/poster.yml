@@ -1,45 +1,35 @@
 name: One•Two•Three Расклейка
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 8,20 * * *'
-  workflow_dispatch:
 
 jobs:
   post:
     runs-on: ubuntu-latest
-    timeout-minutes: 480
+    timeout-minutes: 15  # ← УМЕНЬШИЛ ДО 15 МИНУТ
     
     steps:
       - uses: actions/checkout@v4
       
       - name: Установка Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5  # ← ОБНОВИЛ ДО v5
         with:
-          python-version: '3.10'
-      
-      - name: Установка Node.js (для Baixing)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
+          python-version: '3.11'
       
       - name: Установка зависимостей
         run: |
           sudo apt-get update
           sudo apt-get install -y chromium-browser chromium-chromedriver
           pip install --upgrade pip
-          pip install selenium requests openai google-generativeai
-          npm install -g baixing-agent-cli
+          pip install selenium requests openai google-genai
       
       - name: Запуск расклейки
         env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          BINANCE_SQUARE_API_KEY: ${{ secrets.BINANCE_SQUARE_API_KEY }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT: ${{ secrets.TELEGRAM_CHAT }}
-          BINANCE_SQUARE_API_KEY: ${{ secrets.BINANCE_SQUARE_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          TELEGRAM_ADS_BOT_TOKEN: ${{ secrets.TELEGRAM_ADS_BOT_TOKEN }}
-          TELEGRAM_ADS_CHANNEL: ${{ secrets.TELEGRAM_ADS_CHANNEL }}
-          BTC_ADDRESS: ${{ secrets.BTC_ADDRESS }}
         run: |
           python poster.py
